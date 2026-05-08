@@ -15,7 +15,7 @@ add_model_if_missing() {
         }]' "$file" > "${file}.tmp" && mv "${file}.tmp" "$file"
     fi
 
-    # Set modelrelay as defaullt for agents if not default was set
+    # Set modelrelay as default for agents if not default was set
     if jq -e '.agents.defaults.model_name | select(. == null or . == "")' "$file" > /dev/null; then
         echo "[start-2-modelrelay] Setting modelrelay as defaults for agents in $file"
         jq '.agents |= (. // {}) | .agents.defaults |= (. // {}) | .agents.defaults.model_name = "modelrelay"' "$file" > "${file}.tmp" && mv "${file}.tmp" "$file"
