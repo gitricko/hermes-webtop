@@ -1,0 +1,8 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Terminal=false
+Exec=mate-terminal --title="CodeServer" -e "bash -c 'code-server --trusted-origins=* --auth none --bind-addr 0.0.0.0:8888'"
+Name[en_US]=CodeServer
+Name=CodeServer
+GenericName[en_US.UTF-8]=CodeServer

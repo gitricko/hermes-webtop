@@ -1,0 +1,126 @@
+name: Build and Push Docker Image
+
+permissions:
+  contents: read
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'docker/**'
+      - '.github/workflows/**'
+
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'docker/**'
+      - '.github/workflows/**'
+
+  release:
+    types: [ published ]
+  workflow_dispatch:
+    inputs:
+      manual_push:
+        description: 'Set to "yes" to push tag :test image to GHCR for testing before merging to main'
+        required: false
+        default: 'no'
+        type: choice
+        options:
+          - 'no'
+          - 'yes'
+
+jobs:
+
+  build-test:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: |
+          DOCKER_URI=hermes-webtop docker build -f ./docker/Dockerfile -t hermes-webtop:test ./docker
+          
+      - name: Test Docker image
+        run: |
+          docker run --rm hermes-webtop:test > /tmp/test.log &
+          sleep 60
+          
+          # if grep -q "Data WebSocket Server listening on port 8082" /tmp/test.log; then
+          #   echo "Build successful"
+          # else
+          #   echo "Build failed!"
+          #   exit 1
+          # fi
+        
+  push-to-ghcr:
+    runs-on: ubuntu-latest
+    # Run if on main branch, or if manual_push is yes from workflow_dispatch
+    if: >-
+      (github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.manual_push == 'yes')
+    needs: build-test
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      # --- Free space becos the docker build is large ---
+      - name: Free Disk Space
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: true
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          swap-storage: true
+      
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+        # 👆 This is needed ARM emulation on AMD64 runner
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        # 👆 This is need for QEMU to work
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set lowercase repository name
+        run: |
+          echo "LOWERCASE_REPO=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+
+      - name: Set IMAGE_TAG for build-test
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ github.event.inputs.manual_push }}" = "yes" ]; then
+            echo "IMAGE_TAG=test" >> $GITHUB_ENV
+          elif [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            echo "IMAGE_TAG=latest" >> $GITHUB_ENV
+          fi
+
+      - name: Extract metadata for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ env.LOWERCASE_REPO }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: ./docker
+          platforms: linux/amd64,linux/arm64
+          file: ./docker/Dockerfile
+          push: true
+          tags: |
+            ghcr.io/${{ env.LOWERCASE_REPO }}:${{ env.IMAGE_TAG }}
+            ghcr.io/${{ env.LOWERCASE_REPO }}:${{ github.sha }}
+          labels: ${{ steps.meta.outputs.labels }}

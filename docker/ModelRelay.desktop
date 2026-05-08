@@ -1,0 +1,8 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Terminal=false
+Exec=mate-terminal --title="ModelRelay" -e "bash -c 'modelrelay --disable; modelrelay; exec bash'"
+Name[en_US]=ModelRelay
+Name=ModelRelay
+GenericName[en_US.UTF-8]=ModelRelay
