@@ -31,12 +31,23 @@ start:
 stop:
 	docker compose down
 
+dev:
+	$(MAKE) stop
+	$(MAKE) docker-vol-clean
+	$(MAKE) docker-build
+	$(MAKE) start-locally-baked
+
 docker-image-clean:
 	# docker rm -f $$(docker ps -qa)
 	docker rm -f $(DOCKER_NAME)
 
 docker-vol-clean:
 	docker volume rm -f $(VOLUME_NAME)
+
+docker-clean:
+	$(MAKE) stop
+	$(MAKE) docker-vol-clean
+	docker system prune -af --volumes
 
 backup:
 	mkdir -p $(BACKUP_DIR)
