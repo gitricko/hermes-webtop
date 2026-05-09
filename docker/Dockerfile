@@ -34,6 +34,12 @@ RUN npm install -g modelrelay@${MODELRELAY_VERSION} && \
     npm cache clean --force && \
     chown -R abc:abc /usr/local/lib/node_modules/modelrelay /usr/local/bin/modelrelay
 
+# Install Hermes
+RUN curl -fsSL https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.sh | bash && \
+    npm cache clean --force && \
+    rm -rf /var/lib/apt/lists/* && \
+    chown -R abc:abc /usr/local/lib/hermes-agent
+
 # Install code-server and start automatically when desktop loads
 ARG CODE_SERVER_VERSION
 RUN curl -fsSL https://code-server.dev/install.sh | sh -s -- --version=${CODE_SERVER_VERSION} --method=standalone --prefix=/usr/local && \
@@ -45,4 +51,4 @@ COPY default.conf /defaults/default.conf
 # Switch to the abc user and set zsh as the default shell for both root and abc
 RUN usermod -s $(which zsh) root; usermod -s $(which zsh) abc
 
-EXPOSE 18800 7352 8888
+EXPOSE 8888
