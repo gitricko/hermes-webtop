@@ -89,7 +89,7 @@ jobs:
         # 👆 This is need for QEMU to work
 
       - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
