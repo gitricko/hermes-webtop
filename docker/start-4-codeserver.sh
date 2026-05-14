@@ -9,13 +9,13 @@ sync_desktop_file "$SRC" "/config/Desktop/CodeServer.desktop"
 
 # Add VSCode Extension vscode's config as soon as it appears
 (
-    for i in {0..60}; do
-        if [ -d "/config/.local/share/code-server/User" ]; then
-            echo "[start-4-codeserver] code-server data found"
-            break
-        fi
-        sleep 5
-    done
+  for i in {0..999}; do
+      if [ -d "/config/.local/share/code-server/User" ]; then
+          echo "[start-4-codeserver] code-server configuration found in ~/.local/share/code-server, setting permissions and installing extensions"
+          break
+      fi
+      sleep 5
+  done
 
   chown -R abc:abc /config/.local/share/code-server
 
