@@ -32,7 +32,7 @@ services:
       # hermes specific ports (adjust as needed)
       - 18800:18800
       # modelrelay specific ports (adjust as needed)
-      # - 7352:7352
+      - 7352:7352
       # Code-server specific ports (adjust as needed)
       - 8888:8888
     # Recommended to prevent modern web browsers from crashing
