@@ -1,0 +1,8 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Terminal=false
+Exec=mate-terminal --title="OmniRoute" -e "bash -c 'omniroute --no-open; exec bash'"
+Name[en_US]=OmniRoute
+Name=OmniRoute
+GenericName[en_US.UTF-8]=OmniRoute
