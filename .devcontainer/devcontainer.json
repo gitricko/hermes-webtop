@@ -5,6 +5,6 @@
       "extensions": ["saoudrizwan.claude-dev","joaompfp.hermes-ai-agent"]
     }
   },
-  "postCreateCommand": "bash ./.devcontainer/post-create-cmd.sh > /tmp/post-create-cmd.log",
-  "postStartCommand":  "bash ./.devcontainer/post-start-cmd.sh  > /tmp/post-start-cmd.log"
+  "postCreateCommand": "bash ./.devcontainer/post-create-cmd1.sh > /tmp/post-create-cmd.log",
+  "postStartCommand":  "bash ./.devcontainer/post-start-cmd1.sh  > /tmp/post-start-cmd.log"
 }
