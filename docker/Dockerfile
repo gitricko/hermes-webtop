@@ -14,7 +14,7 @@ FROM node:${NODE_VERSION}-slim AS node-bin
 FROM lscr.io/linuxserver/webtop:ubuntu-mate
 
 # Install help utilities and clean up apt cache to reduce image size
-RUN apt-get update && apt-get install -y htop zsh && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y htop zsh ripgrep && rm -rf /var/lib/apt/lists/*
 
 # Copy Node.js binaries and libraries
 COPY --from=node-bin --chown=abc:abc /usr/local/bin/node /usr/local/bin/
