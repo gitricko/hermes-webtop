@@ -2,7 +2,7 @@
 Version=1.0
 Type=Application
 Terminal=false
-Exec=mate-terminal --title="Hermes" -e "bash -c 'echo \"Hermes is not preinstalled in this image. Install Hermes first, then run it here.\"; exec bash'"
+Exec=mate-terminal --title="Hermes" -e "bash -c 'hermes dashboard --no-open'"
 Name[en_US]=Hermes
 Name=Hermes
 GenericName[en_US.UTF-8]=Hermes Launcher

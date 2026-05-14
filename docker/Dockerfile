@@ -37,19 +37,20 @@ ARG HERMES_VERSION
 RUN curl -fsSL "https://raw.githubusercontent.com/NousResearch/hermes-agent/${HERMES_VERSION}/scripts/install.sh" | bash -s -- --skip-setup && \
     npm cache clean --force && \
     rm -rf /var/lib/apt/lists/* && \
-    chown -R abc:abc /usr/local/lib/hermes-agent
+    chown abc:abc -R /usr/local/lib/hermes-agent
 
 # Install ModelRelay and start automatically when desktop loads
 ARG MODELRELAY_VERSION
 RUN npm install -g modelrelay@${MODELRELAY_VERSION} && \
     npm cache clean --force && \
-    chown -R abc:abc /usr/local/lib/node_modules/modelrelay /usr/local/bin/modelrelay
+    chown abc:abc -R /usr/local/lib/node_modules/modelrelay /usr/local/bin/modelrelay
 
 # Install OmniRoute and start automatically when desktop loads
 ARG OMNIROUTE_VERSION
 RUN npm install -g omniroute@${OMNIROUTE_VERSION} && \
     npm cache clean --force && \
-    chown -R abc:abc /usr/local/lib/node_modules/omniroute /usr/local/bin/omniroute
+    mkdir -p /usr/local/lib/node_modules/omniroute/app/logs/application && \
+    chown abc:abc -R /usr/local/lib/node_modules/omniroute /usr/local/bin/omniroute
 
 # Install code-server and start automatically when desktop loads
 ARG CODE_SERVER_VERSION
