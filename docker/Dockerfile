@@ -35,7 +35,7 @@ RUN npm install -g modelrelay@${MODELRELAY_VERSION} && \
     chown -R abc:abc /usr/local/lib/node_modules/modelrelay /usr/local/bin/modelrelay
 
 # Install Hermes
-RUN curl -fsSL https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.sh | bash && \
+RUN curl -fsSL "https://raw.githubusercontent.com/NousResearch/hermes-agent/${HERMES_VERSION}/scripts/install.sh" | bash -s -- --skip-setup && \
     npm cache clean --force && \
     rm -rf /var/lib/apt/lists/* && \
     chown -R abc:abc /usr/local/lib/hermes-agent
