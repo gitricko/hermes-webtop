@@ -7,6 +7,7 @@ GLOBAL_STATE="$HOME/.cline/data/globalState.json"
 chown abc:abc /usr/local/lib/node_modules
 chown abc:abc /usr/local/bin
 
+(
 # Wait for file to appear
 for i in {0..999}; do
     if [ -f $GLOBAL_STATE ]; then
@@ -55,3 +56,5 @@ echo "  - openAiBaseUrl: http://localhost:7352/v1"
 echo "  - planModeOpenAiModelId: auto-fastest"
 echo "  - actModeOpenAiModelId: auto-fastest"
 echo "  - Actions: all enabled (read, edit, execute, browser, mcp)"
+
+)&
