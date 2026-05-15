@@ -25,8 +25,8 @@ add_model_if_missing() {
 
 # Prep nodejs npm for ModelRelay 
 rm -rf /config/.npm
-chown abc:abc -R  /usr/local/lib/node_modules &
-chown abc:abc -R  /usr/local/bin &
+chown abc:abc -R  /usr/local/lib/node_modules/modelrelay &
+chown abc:abc -R  /usr/local/bin/modelrelay &
 
 # Sync desktop file for autostart and desktop icon
 sync_desktop_file "$SRC" "/config/.config/autostart/ModelRelay.desktop"

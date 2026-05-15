@@ -5,8 +5,9 @@ SRC="/custom-cont-init.d/OmniRoute.desktop"
 
 # Prep nodejs npm for OmniRoute 
 rm -rf /config/.npm
-chown abc:abc -R  /usr/local/lib/node_modules &
-chown abc:abc -R  /usr/local/bin &
+chown abc:abc -R  /usr/local/lib/node_modules/omniroute/app
+chown abc:abc -R  /usr/local/lib/node_modules/omniroute &
+chown abc:abc -R  /usr/local/bin/omniroute &
 
 # Sync desktop file for autostart and desktop icon
 sync_desktop_file "$SRC" "/config/.config/autostart/OmniRoute.desktop"
