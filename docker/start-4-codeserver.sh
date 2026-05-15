@@ -34,6 +34,8 @@ chown abc:abc /usr/local/bin
     cp "${SCRIPT_DIR}/globalState.json" "$HOME/.cline/data/globalState.json"
     cp "${SCRIPT_DIR}/secrets.json" "$HOME/.cline/data/secrets.json"
     runuser -l abc -c "code --install-extension ${EXTENSION}"
+    chown -R abc:abc $HOME/.cline/data
+
   fi
 
   EXTENSION=joaompfp.hermes-ai-agent
