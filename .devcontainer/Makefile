@@ -12,6 +12,12 @@ install:
 	@echo "Installing dependencies..."
 	@bash post-create-cmd.sh
 
+ext-install:
+	@echo "Installing external dependencies..."
+	mkdir -p ~/.cline/data
+	cp globalState.json ~/.cline/data/
+	cp secrets.json ~/.cline/data/
+	code --force --install-extension saoudrizwan.claude-dev
 # === Template Update Commands ===
 
 # Use this command to update your .devcontainer folder with latest from upstream
