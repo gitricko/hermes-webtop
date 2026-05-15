@@ -1,19 +1,25 @@
 #!/bin/bash
 source /custom-cont-init.d/common.sh || exit 1
 
-# Script to configure Cline settings
-# Usage: ./configure-cline.sh
-
 set -e
 
 GLOBAL_STATE="$HOME/.cline/data/globalState.json"
 chown abc:abc /usr/local/lib/node_modules
 chown abc:abc /usr/local/bin
 
+# Wait for file to appear
+for i in {0..999}; do
+    if [ -f $GLOBAL_STATE ]; then
+        echo "[start-2-cline] configuration file $GLOBAL_STATE is found..."
+        break
+    fi
+    sleep 5
+done
+
 # Backup existing file
 if [ -f "$GLOBAL_STATE" ]; then
     cp "$GLOBAL_STATE" "${GLOBAL_STATE}.backup.$(date +%Y%m%d_%H%M%S)"
-    echo "Backed up existing globalState.json"
+    echo "[start-2-cline] Backed up existing globalState.json"
 fi
 
 # Create the configuration with jq
