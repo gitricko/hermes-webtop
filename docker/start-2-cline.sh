@@ -57,4 +57,18 @@ echo "  - planModeOpenAiModelId: auto-fastest"
 echo "  - actModeOpenAiModelId: auto-fastest"
 echo "  - Actions: all enabled (read, edit, execute, browser, mcp)"
 
-)&
+# Create secrets file with jq
+
+GLOBAL_STATE="$HOME/.cline/data/secrets.json"
+if [ -f "$GLOBAL_STATE" ]; then
+    cp "$GLOBAL_STATE" "${GLOBAL_STATE}.backup.$(date +%Y%m%d_%H%M%S)"
+    echo "[start-2-cline] Backed up existing ${GLOBAL_STATE}"
+else
+    echo "{}" > "$GLOBAL_STATE"
+fi
+
+jq \
+    '
+    .openAiApiKey = "  " 
+    ' "$GLOBAL_STATE" > /tmp/globalState.tmp && mv /tmp/globalState.tmp "$GLOBAL_STATE"
+) &
