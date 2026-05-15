@@ -1,0 +1,51 @@
+{
+  "welcomeViewCompleted": true,
+  "__vscodeMigrationVersion": 1,
+  "clineVersion": "3.83.0",
+  "remoteRulesToggles": {},
+  "remoteWorkflowToggles": {},
+  "remoteSkillsToggles": {},
+  "openAiHeaders": {},
+  "sapAiCoreUseOrchestrationMode": true,
+  "ocaMode": "internal",
+  "planModeApiProvider": "openai",
+  "actModeApiProvider": "openai",
+  "openAiBaseUrl": "http://localhost:7352/v1",
+  "planModeOpenAiModelId": "auto-fastest",
+  "actModeOpenAiModelId": "auto-fastest",
+  "azureApiVersion": "",
+  "lastShownAnnouncementId": "3.83",
+  "dismissedBanners": [
+    {
+      "bannerId": "bnr-01KQ02NN40X7WTJMKQC610GS5M",
+      "dismissedAt": 1778856185168
+    }
+  ],
+  "autoApprovalSettings": {
+    "version": 2,
+    "enabled": true,
+    "favorites": [],
+    "maxRequests": 20,
+    "actions": {
+      "readFiles": true,
+      "readFilesExternally": false,
+      "editFiles": false,
+      "editFilesExternally": false,
+      "executeSafeCommands": true,
+      "executeAllCommands": false,
+      "useBrowser": false,
+      "useMcp": true
+    },
+    "enableNotifications": false
+  },
+  "workspaceRoots": [
+    {
+      "path": "/config/Desktop",
+      "name": "Desktop",
+      "vcs": "none"
+    }
+  ],
+  "primaryRootIndex": 0,
+  "globalWorkflowToggles": {},
+  "globalClineRulesToggles": {}
+}

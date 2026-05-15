@@ -1,11 +1,14 @@
 #!/bin/bash
 source /custom-cont-init.d/common.sh || exit 1
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 SRC="/custom-cont-init.d/CodeServer.desktop"
 
 sync_desktop_file "$SRC" "/config/.config/autostart/CodeServer.desktop"
 sync_desktop_file "$SRC" "/config/Desktop/CodeServer.desktop"
 
+chown abc:abc /usr/local/lib/node_modules
+chown abc:abc /usr/local/bin
 
 # Add VSCode Extension vscode's config as soon as it appears
 (
@@ -27,6 +30,9 @@ sync_desktop_file "$SRC" "/config/Desktop/CodeServer.desktop"
     echo "[start-4-codeserver] Extension ${EXTENSION} already installed, skip"
   else
     echo "[start-4-codeserver] Installing Extension ${EXTENSION}..."
+    mkdir -p "$HOME/.cline/data"
+    cp "${SCRIPT_DIR}/globalState.json" "$HOME/.cline/data/globalState.json"
+    cp "${SCRIPT_DIR}/secrets.json" "$HOME/.cline/data/secrets.json"
     runuser -l abc -c "code --install-extension ${EXTENSION}"
   fi
 
