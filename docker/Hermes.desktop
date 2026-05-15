@@ -2,7 +2,7 @@
 Version=1.0
 Type=Application
 Terminal=false
-Exec=mate-terminal --title="Hermes" -e "bash -c 'hermes dashboard --no-open'"
+Exec=mate-terminal --title="Hermes" -e "bash -c 'hermes dashboard --host 0.0.0.0 --insecure --no-open'"
 Name[en_US]=Hermes
 Name=Hermes
 GenericName[en_US.UTF-8]=Hermes Launcher

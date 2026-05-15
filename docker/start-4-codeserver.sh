@@ -11,8 +11,11 @@ sync_desktop_file "$SRC" "/config/Desktop/CodeServer.desktop"
 (
   for i in {0..999}; do
       if [ -d "/config/.local/share/code-server/User" ]; then
-          echo "[start-4-codeserver] code-server configuration found in ~/.local/share/code-server, setting permissions and installing extensions"
-          break
+        echo "[start-4-codeserver] code-server configuration found in ~/.local/share/code-server, setting permissions and installing extensions"
+        break
+      else
+        echo "[start-4-codeserver] Force code-server to initialize by calling URI"
+        curl -s http://localhost:8888 > /dev/null 2>&1
       fi
       sleep 5
   done

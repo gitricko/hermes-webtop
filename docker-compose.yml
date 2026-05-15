@@ -29,8 +29,8 @@ services:
     ports:
       # Access the Webtop GUI on port 3000 (http)
       # - 3000:3000
-      # hermes specific ports (adjust as needed)
-      - 18800:18800
+      # hermes dashboard specific ports (adjust as needed)
+      - 9119:9119
       # modelrelay specific ports (adjust as needed)
       - 7352:7352
       # OmniRoute specific ports (adjust as needed)
