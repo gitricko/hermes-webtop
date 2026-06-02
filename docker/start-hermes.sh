@@ -24,16 +24,16 @@ runuser -l abc <<'EOF'
     hermes config set memory.memory_enabled true
     hermes config set memory.user_profile_enabled true
     hermes config set memory.provider mnemon
-
-    # Start Hermes Gateway in background
-    echo "[start-hermes] Starting Hermes Gateway..."
-    mkdir -p  ~/.hermes/logs
-    nohup hermes gateway run --no-supervise > ~/.hermes/logs/gateway.log 2>&1 &
-
-    # Start Hermes Dashboard in background
-    echo "[start-hermes] Starting Hermes Dashboard..."
-    nohup hermes dashboard --host 0.0.0.0 --insecure --no-open > ~/.hermes/logs/dashboard.log 2>&1 &
   fi
+
+  # Start Hermes Gateway in background
+  echo "[start-hermes] Starting Hermes Gateway..."
+  mkdir -p  ~/.hermes/logs
+  nohup hermes gateway run --no-supervise > ~/.hermes/logs/gateway.log 2>&1 &
+
+  # Start Hermes Dashboard in background
+  echo "[start-hermes] Starting Hermes Dashboard..."
+  nohup hermes dashboard --host 0.0.0.0 --insecure --no-open > ~/.hermes/logs/dashboard.log 2>&1 &
 
   # update mnemon provider if version changes
   echo "[start-hermes] Checking mnemon provider..."
