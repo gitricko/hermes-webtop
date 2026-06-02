@@ -24,6 +24,9 @@ runuser -l abc <<'EOF'
     hermes config set memory.memory_enabled true
     hermes config set memory.user_profile_enabled true
     hermes config set memory.provider mnemon
+    # optimize for kanban
+    hermes config set agent.max_turns 120
+    hermes config set kanban.failure_limit 3
   fi
 
   # Start Hermes Gateway in background
