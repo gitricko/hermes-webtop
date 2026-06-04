@@ -38,11 +38,11 @@ dev:
 	$(MAKE) docker-build
 	$(MAKE) start-locally-baked
 
-docker-image-clean:
+update-image:
 	$(MAKE) stop
 	-docker rm -f $(DOCKER_NAME)
 	-docker rmi $(DOCKER_IMAGE_NAME) ghcr.io/gitricko/$(DOCKER_IMAGE_NAME)
-
+	$(MAKE) start
 
 docker-vol-clean:
 	docker volume rm -f $(VOLUME_NAME)
