@@ -6,6 +6,7 @@ SRC="/custom-cont-init.d/Hermes.desktop"
 chown abc:abc /usr/local/lib/hermes-agent
 chown abc:abc -R /usr/local/lib/hermes-agent &
 chown abc:abc -R /usr/local/lib/hermes-agent/web
+chown abc:abc -R /usr/local/lib/hermes-agent/hermes_cli
 
 # sync_desktop_file "$SRC" "/config/.config/autostart/Hermes.desktop"
 # sync_desktop_file "$SRC" "/config/Desktop/Hermes.desktop"
