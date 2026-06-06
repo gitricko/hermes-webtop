@@ -7,7 +7,7 @@ SRC="/custom-cont-init.d/CodeServer.desktop"
 sync_desktop_file "$SRC" "/config/.config/autostart/CodeServer.desktop"
 sync_desktop_file "$SRC" "/config/Desktop/CodeServer.desktop"
 
-chown -R abc:abc custom-cont-init.d
+chown -R abc:abc /custom-cont-init.d
 chown abc:abc /usr/local/lib/node_modules
 chown abc:abc /usr/local/bin
 chown -R abc:abc /config/.local

@@ -3,17 +3,19 @@ source /custom-cont-init.d/common.sh || exit 1
 
 SRC="/custom-cont-init.d/Hermes.desktop"
 
-chown abc:abc /usr/local/lib/hermes-agent
-chown abc:abc -R /usr/local/lib/hermes-agent &
-chown abc:abc -R /usr/local/lib/hermes-agent/web
-chown abc:abc -R /usr/local/lib/hermes-agent/hermes_cli
-
 # sync_desktop_file "$SRC" "/config/.config/autostart/Hermes.desktop"
 # sync_desktop_file "$SRC" "/config/Desktop/Hermes.desktop"
 
-chown abc:abc -R  ~/.hermes
+(
+  
+# chown abc:abc -R  ~/.hermes
+# chown abc:abc /usr/local/lib/hermes-agent
 
 runuser -l abc <<'EOF'
+  source /custom-cont-init.d/common.sh || exit 1
+  ensure_ownership "$HOME/.hermes"
+  ensure_ownership "/usr/local/lib/hermes-agent"
+
   if [ -d "$HOME/.hermes/logs" ] && [ -z "$(ls -A "$HOME/.hermes/logs")" ]; then
     echo "[start-hermes] No logs found in $HOME/.hermes/logs, setting up default configuration for custom provider"
     echo "[start-hermes] Initializing hermes config..."
@@ -31,14 +33,14 @@ runuser -l abc <<'EOF'
     hermes config set kanban.failure_limit 3
   fi
 
+  # Start Hermes Dashboard in background
+  echo "[start-hermes] Starting Hermes Dashboard..."
+  nohup hermes dashboard --host 0.0.0.0 --insecure --no-open > ~/.hermes/logs/dashboard.log 2>&1 &
+
   # Start Hermes Gateway in background
   echo "[start-hermes] Starting Hermes Gateway..."
   mkdir -p  ~/.hermes/logs
   nohup hermes gateway run --no-supervise > ~/.hermes/logs/gateway.log 2>&1 &
-
-  # Start Hermes Dashboard in background
-  echo "[start-hermes] Starting Hermes Dashboard..."
-  nohup hermes dashboard --host 0.0.0.0 --insecure --no-open > ~/.hermes/logs/dashboard.log 2>&1 &
 
   # update mnemon provider if version changes
   echo "[start-hermes] Checking mnemon provider..."
@@ -60,4 +62,7 @@ runuser -l abc <<'EOF'
 
 EOF
 
-chown abc:abc -R  ~/.hermes
+) &
+
+# Let script to run in background properly
+sleep 15
