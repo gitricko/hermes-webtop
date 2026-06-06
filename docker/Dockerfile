@@ -48,9 +48,9 @@ COPY --chown=abc:abc *.md /custom-cont-init.d
 # Install Hermes
 ARG HERMES_VERSION
 RUN curl -fsSL "https://raw.githubusercontent.com/NousResearch/hermes-agent/${HERMES_VERSION}/scripts/install.sh" | bash -s -- --skip-setup && \
-    npm cache clean --force && \
     rm -rf /var/lib/apt/lists/* && \
-    chown abc:abc -R /usr/local/lib/hermes-agent
+    cd /usr/local/lib/hermes-agent/web && npm install && npm run build && \
+    npm cache clean --force
 
 # Install ModelRelay and start automatically when desktop loads
 ARG MODELRELAY_VERSION

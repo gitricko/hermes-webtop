@@ -8,13 +8,12 @@ SRC="/custom-cont-init.d/Hermes.desktop"
 
 (
   
-# chown abc:abc -R  ~/.hermes
-# chown abc:abc /usr/local/lib/hermes-agent
+chown abc:abc /usr/local/lib/hermes-agent
 
 runuser -l abc <<'EOF'
   source /custom-cont-init.d/common.sh || exit 1
   ensure_ownership "$HOME/.hermes"
-  ensure_ownership "/usr/local/lib/hermes-agent"
+  ensure_ownership "/usr/local/lib/hermes-agent" &
 
   if [ -d "$HOME/.hermes/logs" ] && [ -z "$(ls -A "$HOME/.hermes/logs")" ]; then
     echo "[start-hermes] No logs found in $HOME/.hermes/logs, setting up default configuration for custom provider"
@@ -22,6 +21,7 @@ runuser -l abc <<'EOF'
     hermes config set model.provider custom
     hermes config set model.base_url http://localhost:7352/v1
     hermes config set model.default auto-fastest
+    hermes config set model.api_key "no-key-needed"
     # Turn off approval alert and live dangerously since u are in a self-contained container.
     hermes config set approvals.mode off
     # Turn on memory by default and to mnemon
@@ -33,13 +33,10 @@ runuser -l abc <<'EOF'
     hermes config set kanban.failure_limit 3
   fi
 
-  # Start Hermes Dashboard in background
-  echo "[start-hermes] Starting Hermes Dashboard..."
-  nohup hermes dashboard --host 0.0.0.0 --insecure --no-open > ~/.hermes/logs/dashboard.log 2>&1 &
+  mkdir -p  ~/.hermes/logs
 
   # Start Hermes Gateway in background
   echo "[start-hermes] Starting Hermes Gateway..."
-  mkdir -p  ~/.hermes/logs
   nohup hermes gateway run --no-supervise > ~/.hermes/logs/gateway.log 2>&1 &
 
   # update mnemon provider if version changes
@@ -59,6 +56,14 @@ runuser -l abc <<'EOF'
   else
     echo "[start-hermes] WARNING: Failed to clone gitricko/hermes-plugin-mnemon repository."
   fi
+
+  # Start Hermes Dashboard in background
+  ensure_ownership "/usr/local/lib/hermes-agent/hermes_cli"
+  ensure_ownership "/usr/local/lib/hermes-agent/web"
+  echo "[start-hermes] Starting Hermes Dashboard..."
+  nohup hermes dashboard --host 0.0.0.0 --insecure --no-open > ~/.hermes/logs/dashboard.log 2>&1 &
+
+  echo "[start-hermes] all hermes-agent services started and ready."
 
 EOF
 
