@@ -38,6 +38,9 @@ runuser -l abc <<'EOF'
 
   mkdir -p  ~/.hermes/logs
 
+  # Install Telegram gateway dependency if missing
+  /usr/local/lib/hermes-agent/venv/bin/pip install python-telegram-bot 2>/dev/null || true
+
   # Start Hermes Gateway in background
   echo "[start-hermes] Starting Hermes Gateway..."
   nohup hermes gateway run --no-supervise > ~/.hermes/logs/gateway.log 2>&1 &
