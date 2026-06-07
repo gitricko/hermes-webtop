@@ -7,8 +7,11 @@ SRC="/custom-cont-init.d/Hermes.desktop"
 # sync_desktop_file "$SRC" "/config/Desktop/Hermes.desktop"
 
 (
-  
-chown abc:abc /usr/local/lib/hermes-agent
+
+# Fast change ownership of hermes-agent root directory to abc user to avoid permission issues
+shopt -s dotglob
+chown abc:abc /usr/local/lib/hermes-agent/*
+shopt -u dotglob
 
 runuser -l abc <<'EOF'
   source /custom-cont-init.d/common.sh || exit 1

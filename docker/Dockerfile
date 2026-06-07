@@ -49,6 +49,7 @@ COPY --chown=abc:abc *.md /custom-cont-init.d
 ARG HERMES_VERSION
 RUN curl -fsSL "https://raw.githubusercontent.com/NousResearch/hermes-agent/${HERMES_VERSION}/scripts/install.sh" | bash -s -- --skip-setup && \
     rm -rf /var/lib/apt/lists/* && \
+    cd /usr/local/lib/hermes-agent && npm install && \
     cd /usr/local/lib/hermes-agent/web && npm install && npm run build && \
     npm cache clean --force
 
