@@ -39,6 +39,9 @@ runuser -l abc <<'EOF'
   mkdir -p  ~/.hermes/logs
 
   # Install Telegram gateway dependency if missing
+  ensure_ownership "/usr/local/lib/hermes-agent/venv"
+  /usr/local/lib/hermes-agent/venv/bin/python -m ensurepip --upgrade || true
+  ln -s /usr/local/lib/hermes-agent/venv/bin/pip3 /usr/local/lib/hermes-agent/venv/bin/pip || true
   /usr/local/lib/hermes-agent/venv/bin/pip install python-telegram-bot 2>/dev/null || true
 
   # Start Hermes Gateway in background
