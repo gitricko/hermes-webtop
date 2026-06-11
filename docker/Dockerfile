@@ -1,5 +1,5 @@
 ARG HERMES_VERSION="v2026.6.5"
-ARG OMNIROUTE_VERSION=3.8.19
+ARG OMNIROUTE_VERSION=3.8.21
 ARG MODELRELAY_VERSION=1.17.1
 ARG OLLAMA_VERSION=0.24.0
 ARG NODE_VERSION=24
@@ -40,7 +40,7 @@ COPY --from=ollama-bin --chown=abc:abc /usr/bin/ollama /usr/local/bin/ollama
 
 # Start desktop launchers and bootstrap scripts automatically when the desktop loads
 RUN mkdir -p /custom-cont-init.d
-COPY --chown=abc:abc *.desktop /custom-cont-init.d
+# COPY --chown=abc:abc *.desktop /custom-cont-init.d
 COPY --chown=abc:abc *.sh /custom-cont-init.d
 COPY --chown=abc:abc *.json /custom-cont-init.d
 COPY --chown=abc:abc *.md /custom-cont-init.d
@@ -53,19 +53,17 @@ RUN curl -fsSL "https://raw.githubusercontent.com/NousResearch/hermes-agent/${HE
     cd /usr/local/lib/hermes-agent/web && npm install && npm run build && \
     npm cache clean --force
 
-# Install ModelRelay and start automatically when desktop loads
+# Install ModelRelay and start automatically in the background
 ARG MODELRELAY_VERSION
 # RUN npm install -g modelrelay@${MODELRELAY_VERSION} && \
 RUN npm install -g github:gitricko/modelrelay && \
-    npm cache clean --force && \
-    chown abc:abc -R /usr/local/lib/node_modules/modelrelay /usr/local/bin/modelrelay
+    npm cache clean --force
 
 # Install OmniRoute and start automatically when desktop loads
 ARG OMNIROUTE_VERSION
 RUN npm install -g omniroute@${OMNIROUTE_VERSION} && \
     npm cache clean --force && \
-    mkdir -p /usr/local/lib/node_modules/omniroute/app/logs/application && \
-    chown abc:abc -R /usr/local/lib/node_modules/omniroute /usr/local/bin/omniroute
+    mkdir -p /usr/local/lib/node_modules/omniroute/app/logs/application
 
 # Install code-server and start automatically when desktop loads
 ARG CODE_SERVER_VERSION

@@ -2,19 +2,23 @@
 source /custom-cont-init.d/common.sh || exit 1
 # SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-SRC="/custom-cont-init.d/CodeServer.desktop"
+# SRC="/custom-cont-init.d/CodeServer.desktop"
 
-sync_desktop_file "$SRC" "/config/.config/autostart/CodeServer.desktop"
-sync_desktop_file "$SRC" "/config/Desktop/CodeServer.desktop"
+# sync_desktop_file "$SRC" "/config/.config/autostart/CodeServer.desktop"
+# sync_desktop_file "$SRC" "/config/Desktop/CodeServer.desktop"
 
 chown -R abc:abc /custom-cont-init.d
 chown abc:abc /usr/local/lib/node_modules
 chown abc:abc /usr/local/bin
 chown -R abc:abc /config/.local
 
-# Add VSCode Extension vscode's config as soon as it appears
 runuser -l abc <<'EOF'
+source /custom-cont-init.d/common.sh || exit 1
 
+# Start Code-Server in the background
+nohup bash -c 'code-server --trusted-origins=* --auth none --bind-addr 0.0.0.0:8888' > /tmp/codeserver.log 2>&1 &
+
+# Add VSCode Extension vscode's config as soon as it appears
 (
   for i in {0..999}; do
       if [ -d "/config/.local/share/code-server/User" ]; then

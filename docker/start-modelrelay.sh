@@ -3,44 +3,24 @@ source /custom-cont-init.d/common.sh || exit 1
 
 SRC="/custom-cont-init.d/ModelRelay.desktop"
 
-add_model_if_missing() {
-    local file="$1"
+# Sync desktop file for desktop icon
+# sync_desktop_file "$SRC" "/config/Desktop/ModelRelay.desktop"
 
-    if ! jq -e '.model_list | any(.model_name == "modelrelay")' "$file" > /dev/null; then
-        echo "[start-modelrelay] Adding modelrelay model to $file"
-        jq '.model_list += [{
-          "model_name": "modelrelay",
-          "model": "openai/auto-fastest",
-          "api_base": "http://localhost:7352/v1"
-        }]' "$file" > "${file}.tmp" && mv "${file}.tmp" "$file"
-    fi
+chown abc:abc -R /usr/local/bin/modelrelay
 
-    # Set modelrelay as default for agents if not default was set
-    if jq -e '.agents.defaults.model_name | select(. == null or . == "")' "$file" > /dev/null; then
-        echo "[start-modelrelay] Setting modelrelay as defaults for agents in $file"
-        jq '.agents |= (. // {}) | .agents.defaults |= (. // {}) | .agents.defaults.model_name = "modelrelay"' "$file" > "${file}.tmp" && mv "${file}.tmp" "$file"
-    fi
-
-}
+runuser -l abc <<'EOF'
+source /custom-cont-init.d/common.sh || exit 1
 
 # Prep nodejs npm for ModelRelay 
-rm -rf /config/.npm
-chown abc:abc -R  /usr/local/lib/node_modules/modelrelay &
-chown abc:abc -R  /usr/local/bin/modelrelay &
+sudo rm -rf /config/.npm
 
-# Sync desktop file for autostart and desktop icon
-sync_desktop_file "$SRC" "/config/.config/autostart/ModelRelay.desktop"
-sync_desktop_file "$SRC" "/config/Desktop/ModelRelay.desktop"
+# Ensure ModelRelay is owned by abc
+ensure_ownership "/usr/local/lib/node_modules/modelrelay"
 
-# Add modelrelay model to hermes's config as soon as it appears, and set it as default for agents if no default was set
-# /config/.hermes/config.json 
-(
-    for i in {0..60}; do
-        if [ -f "/config/.hermes/config.json" ]; then
-            add_model_if_missing "/config/.hermes/config.json"
-            chown abc:abc "/config/.hermes/config.json"
-            break
-        fi
-        sleep 5
-    done
-) &
+# Start ModelRelay
+echo "[start-modelrelay] Starting ModelRelay..."
+modelrelay --disable
+nohup bash -c 'while true; do modelrelay >> /tmp/modelrelay.log 2>&1; sleep 3; done' &
+sleep 10
+
+EOF
