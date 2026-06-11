@@ -32,7 +32,7 @@ nohup bash -c 'code-server --trusted-origins=* --auth none --bind-addr 0.0.0.0:8
   done
 
   EXTENSION=hermes-code-agent
-  VERSION=3.0.2
+  VERSION=3.0.3
   if code --list-extensions | grep -q "${EXTENSION}"; then
     echo "[start-codeserver] Extension ${EXTENSION} already installed, skip"
   else
