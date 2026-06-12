@@ -21,10 +21,15 @@ runuser -l abc <<'EOF'
   if [ -d "$HOME/.hermes/logs" ] && [ -z "$(ls -A "$HOME/.hermes/logs")" ]; then
     echo "[start-hermes] No logs found in $HOME/.hermes/logs, setting up default configuration for custom provider"
     echo "[start-hermes] Initializing hermes config..."
-    hermes config set model.provider custom
-    hermes config set model.base_url http://localhost:7352/v1
     hermes config set model.default auto-fastest
-    hermes config set model.api_key "no-key-needed"
+    hermes config set model.provider modelrelay
+    hermes config set providers.omniroute.base_url http://localhost:20128/v1
+    hermes config set providers.omniroute.api_key no-key-needed
+    hermes config set providers.modelrelay.base_url http://localhost:7352/v1
+    hermes config set providers.modelrelay.api_key no-key-needed
+    hermes config set fallback_providers.provider omniroute
+    hermes config set fallback_providers.model auto-fastest
+  
     # Turn off approval alert and live dangerously since u are in a self-contained container.
     hermes config set approvals.mode off
     # Turn on memory by default and to mnemon
@@ -34,6 +39,7 @@ runuser -l abc <<'EOF'
     # optimize for kanban
     hermes config set agent.max_turns 120
     hermes config set kanban.failure_limit 3
+    
   fi
 
   mkdir -p  ~/.hermes/logs
@@ -71,6 +77,12 @@ runuser -l abc <<'EOF'
   ensure_ownership "/usr/local/lib/hermes-agent/web"
   echo "[start-hermes] Starting Hermes Dashboard..."
   nohup hermes dashboard --host 0.0.0.0 --insecure --no-open > ~/.hermes/logs/dashboard.log 2>&1 &
+
+  # Remind Hermes on Mnemon setup if needed
+  if [ ! -f "$HOME/.hermes/memories/USER.md" ]; then
+    echo "[start-hermes] Setting up Mnemon USER.md..."
+    echo 'Always use Mnemon (mnemon_remember / mnemon_recall) as primary memory provider instead of the standard memory() tool. Mnemon has no char limit. Only fall back to memory() for structured preference data (target=user or memory).' > "$HOME/.hermes/memories/USER.md"
+  fi
 
   echo "[start-hermes] all hermes-agent services started and ready."
 
