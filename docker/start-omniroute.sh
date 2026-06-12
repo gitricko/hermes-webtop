@@ -47,8 +47,12 @@ if [ "$INIT_OMNIROUTE" -eq "1" ]; then
     conn.close()
     "
 
-    echo "[start-omniroute] Creating auto-fastest combo..."
-    omniroute combo create auto-fastest --strategy auto   
+   # Create auto-fastest combo
+    while ! omniroute combo create auto-fastest --strategy auto ; do
+        echo "[start-omniroute] omniroute still not ready yet, retrying..."
+        sleep 3
+    done
+    echo "[start-omniroute] OmniRoute Combo auto-fastest created!"
 
     # 2. Get the combo ID (skip the banner line from CLI output)
     COMBO_ID=$(omniroute combo list --json | grep -v "📋" | \
