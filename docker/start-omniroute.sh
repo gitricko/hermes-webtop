@@ -54,6 +54,19 @@ if [ "$INIT_OMNIROUTE" -eq "1" ]; then
     done
     echo "[start-omniroute] OmniRoute Combo auto-fastest created!"
 
+    # Enable OmniRoute MCP if not already enabled
+    if omniroute mcp status --json 2>/dev/null | python3 -c "import sys,json;exit(0 if json.load(sys.stdin).get('enabled') else 1)"; then
+        echo "[start-omniroute] MCP enabled"
+    else
+        echo "[start-omniroute] Enabling MCP..."
+        curl -s -X PATCH http://localhost:20128/api/settings \
+            -H "Content-Type: application/json" -d '{"mcpEnabled":true}' >/dev/null
+        echo "[start-omniroute] MCP enabled"
+    fi
+
+    # Add omniroute MCP to hermes
+    yes Y | hermes mcp add omniroute --command omniroute --args --mcp
+
     # 2. Get the combo ID (skip the banner line from CLI output)
     COMBO_ID=$(omniroute combo list --json | grep -v "📋" | \
     python3 -c "import sys,json; d=json.load(sys.stdin); print([c['id'] for c in d['combos'] if c['name']=='auto-fastest'][0])")

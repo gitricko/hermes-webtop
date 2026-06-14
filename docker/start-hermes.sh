@@ -22,12 +22,12 @@ runuser -l abc <<'EOF'
     echo "[start-hermes] No logs found in $HOME/.hermes/logs, setting up default configuration for custom provider"
     echo "[start-hermes] Initializing hermes config..."
     hermes config set model.default auto-fastest
-    hermes config set model.provider modelrelay
+    hermes config set model.provider omniroute
     hermes config set providers.omniroute.base_url http://localhost:20128/v1
     hermes config set providers.omniroute.api_key no-key-needed
     hermes config set providers.modelrelay.base_url http://localhost:7352/v1
     hermes config set providers.modelrelay.api_key no-key-needed
-    hermes config set fallback_providers.provider omniroute
+    hermes config set fallback_providers.provider modelrelay
     hermes config set fallback_providers.model auto-fastest
   
     # Turn off approval alert and live dangerously since u are in a self-contained container.
@@ -39,7 +39,7 @@ runuser -l abc <<'EOF'
     # optimize for kanban
     hermes config set agent.max_turns 120
     hermes config set kanban.failure_limit 3
-    
+
   fi
 
   mkdir -p  ~/.hermes/logs
