@@ -44,15 +44,126 @@ jobs:
           
       - name: Test Docker image
         run: |
-          docker run --rm hermes-webtop:test > /tmp/test.log &
-          sleep 60
-          
-          # if grep -q "Data WebSocket Server listening on port 8082" /tmp/test.log; then
-          #   echo "Build successful"
-          # else
-          #   echo "Build failed!"
-          #   exit 1
-          # fi
+          CONTAINER_NAME="hermes-webtop-test"
+          TIMEOUT=120
+
+          # Start container with shm-size (required by webtop) and all service ports mapped
+          docker run -d --name "$CONTAINER_NAME" \
+            --shm-size=1gb \
+            -p 3000:3000 \
+            -p 8888:8888 \
+            -p 7352:7352 \
+            -p 20128:20128 \
+            hermes-webtop:test
+
+          # Wait for init scripts to complete (poll for known log markers)
+          echo "Waiting for startup scripts to complete..."
+          STARTED_AT=$(date +%s)
+          while true; do
+            NOW=$(date +%s)
+            ELAPSED=$((NOW - STARTED_AT))
+
+            if [ "$ELAPSED" -gt "$TIMEOUT" ]; then
+              echo "FAIL: Container did not finish init within ${TIMEOUT}s"
+              docker logs "$CONTAINER_NAME" --tail 100
+              docker kill "$CONTAINER_NAME" >/dev/null 2>&1 || true
+              exit 1
+            fi
+
+            LOGS=$(docker logs "$CONTAINER_NAME" 2>&1)
+
+            # Check for Hermes readiness (our A2 readiness probe)
+            if echo "$LOGS" | grep -q "Dashboard ready after"; then
+              echo "PASS: Hermes dashboard became healthy."
+              break
+            fi
+
+            # If we see Hermes services started but no dashboard probe, that's OK too
+            if echo "$LOGS" | grep -q "all hermes-agent services started and ready"; then
+              echo "PASS: Hermes services reported ready."
+              break
+            fi
+
+            sleep 5
+          done
+
+          # Quick sanity: container must still be running
+          if ! docker ps --filter "name=$CONTAINER_NAME" --filter "status=running" --format "{{.Names}}" | grep -q "$CONTAINER_NAME"; then
+            echo "FAIL: Container stopped unexpectedly."
+            docker logs "$CONTAINER_NAME" --tail 50
+            docker rm -f "$CONTAINER_NAME" >/dev/null 2>&1 || true
+            exit 1
+          fi
+
+          # Poll all service ports until all respond or timeout
+          PORT_POLL_TIMEOUT=60
+          POLL_STARTED_AT=$(date +%s)
+          declare -A RESPONDED
+          echo ""
+          echo "=== Polling Service Ports (${PORT_POLL_TIMEOUT}s timeout) ==="
+
+          while true; do
+            NOW=$(date +%s)
+            ELAPSED=$((NOW - POLL_STARTED_AT))
+
+            if [ "$ELAPSED" -gt "$PORT_POLL_TIMEOUT" ]; then
+              echo ""
+              echo "→ FAIL: Port poll timeout after ${PORT_POLL_TIMEOUT}s — not all services responded"
+              for pair in "3000:WebTop" "8888:CodeServer" "7352:ModelRelay" "20128:OmniRoute"; do
+                PORT="${pair%%:*}"
+                NAME="${pair##*:}"
+                if [ "${RESPONDED[$PORT]}" != "true" ]; then
+                  echo "  • $NAME (:$PORT) — ❌ never responded"
+                fi
+              done
+              docker logs "$CONTAINER_NAME" --tail 50
+              docker kill "$CONTAINER_NAME" >/dev/null 2>&1 || true
+              docker rm -f "$CONTAINER_NAME" >/dev/null 2>&1 || true
+              exit 1
+            fi
+
+            for pair in "3000:WebTop" "8888:CodeServer" "7352:ModelRelay" "20128:OmniRoute"; do
+              PORT="${pair%%:*}"
+              NAME="${pair##*:}"
+
+              if [ "${RESPONDED[$PORT]}" = "true" ]; then
+                continue
+              fi
+
+              HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 "http://localhost:${PORT}" 2>/dev/null) || HTTP_CODE="000"
+              HTTP_CODE=$(echo "$HTTP_CODE" | tr -d '[:space:]')
+
+              if [ -n "$HTTP_CODE" ] && [ "$HTTP_CODE" != "000" ]; then
+                echo "  $NAME (:$PORT) — ✅ HTTP ${HTTP_CODE} (${ELAPSED}s)"
+                RESPONDED[$PORT]="true"
+              fi
+            done
+
+            # Check if all ports responded
+            ALL_RESPONDED=true
+            for port in 3000 8888 7352 20128; do
+              if [ "${RESPONDED[$port]}" != "true" ]; then
+                ALL_RESPONDED=false
+                break
+              fi
+            done
+
+            if [ "$ALL_RESPONDED" = "true" ]; then
+              echo ""
+              echo "→ PASS: All service ports responded within ${ELAPSED}s"
+              break
+            fi
+
+            sleep 5
+          done
+
+          echo ""
+
+          # Cleanup
+          echo "Test complete. Stopping container..."
+          docker kill "$CONTAINER_NAME" >/dev/null 2>&1 || true
+          docker rm -f "$CONTAINER_NAME" >/dev/null 2>&1 || true
+          echo "PASS: Docker image smoke test passed."
         
   push-to-ghcr:
     runs-on: ubuntu-latest
