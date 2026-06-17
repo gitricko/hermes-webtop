@@ -50,11 +50,7 @@ runuser -l abc <<'EOF'
   ln -s /usr/local/lib/hermes-agent/venv/bin/pip3 /usr/local/lib/hermes-agent/venv/bin/pip || true
   /usr/local/lib/hermes-agent/venv/bin/pip install python-telegram-bot 2>/dev/null || true
 
-  # Start Hermes Gateway in background
-  echo "[start-hermes] Starting Hermes Gateway..."
-  nohup hermes gateway run --no-supervise > ~/.hermes/logs/gateway.log 2>&1 &
-
-  # update mnemon provider if version changes
+  # update mnemon provider if version changes (synced BEFORE gateway starts)
   echo "[start-hermes] Checking mnemon provider..."
   rm -rf /tmp/mnemon_repo
   if git clone https://github.com/gitricko/hermes-plugin-mnemon /tmp/mnemon_repo; then
@@ -71,6 +67,10 @@ runuser -l abc <<'EOF'
   else
     echo "[start-hermes] WARNING: Failed to clone gitricko/hermes-plugin-mnemon repository."
   fi
+
+  # Start Hermes Gateway in background (mnemon is ready before this fires)
+  echo "[start-hermes] Starting Hermes Gateway..."
+  nohup hermes gateway run --no-supervise > ~/.hermes/logs/gateway.log 2>&1 &
 
   # Start Hermes Dashboard in background
   ensure_ownership "/usr/local/lib/hermes-agent/hermes_cli"
