@@ -176,7 +176,7 @@ jobs:
           fi
 
           echo "=== Verified Health Report JSON ==="
-          docker exec "$CONTAINER_NAME" cat /tmp/health-report.json
+          docker exec "$CONTAINER_NAME" cat /tmp/health-report.json | jq -r
 
           echo ""
 
