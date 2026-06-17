@@ -44,15 +44,69 @@ jobs:
           
       - name: Test Docker image
         run: |
-          docker run --rm hermes-webtop:test > /tmp/test.log &
-          sleep 60
-          
-          # if grep -q "Data WebSocket Server listening on port 8082" /tmp/test.log; then
-          #   echo "Build successful"
-          # else
-          #   echo "Build failed!"
-          #   exit 1
-          # fi
+          CONTAINER_NAME="hermes-webtop-test"
+          TIMEOUT=120
+
+          # Start container with shm-size (required by webtop) and capture logs
+          docker run -d --name "$CONTAINER_NAME" \
+            --shm-size=1gb \
+            -p 3000:3000 \
+            hermes-webtop:test
+
+          # Wait for init scripts to complete (poll for known log markers)
+          echo "Waiting for startup scripts to complete..."
+          STARTED_AT=$(date +%s)
+          while true; do
+            NOW=$(date +%s)
+            ELAPSED=$((NOW - STARTED_AT))
+
+            if [ "$ELAPSED" -gt "$TIMEOUT" ]; then
+              echo "FAIL: Container did not finish init within ${TIMEOUT}s"
+              docker logs "$CONTAINER_NAME" --tail 100
+              docker kill "$CONTAINER_NAME" >/dev/null 2>&1 || true
+              exit 1
+            fi
+
+            LOGS=$(docker logs "$CONTAINER_NAME" 2>&1)
+
+            # Check for Hermes readiness (our A2 readiness probe)
+            if echo "$LOGS" | grep -q "Dashboard ready after"; then
+              echo "PASS: Hermes dashboard became healthy."
+              break
+            fi
+
+            # If we see Hermes services started but no dashboard probe, that's OK too
+            if echo "$LOGS" | grep -q "all hermes-agent services started and ready"; then
+              echo "PASS: Hermes services reported ready."
+              break
+            fi
+
+            sleep 5
+          done
+
+          # Quick sanity: container must still be running
+          if ! docker ps --filter "name=$CONTAINER_NAME" --filter "status=running" --format "{{.Names}}" | grep -q "$CONTAINER_NAME"; then
+            echo "FAIL: Container stopped unexpectedly."
+            docker logs "$CONTAINER_NAME" --tail 50
+            docker rm -f "$CONTAINER_NAME" >/dev/null 2>&1 || true
+            exit 1
+          fi
+
+          # Verify at least one mapped port is responding
+          echo "Checking port 3000 (WebTop)..."
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 http://localhost:3000 2>/dev/null || echo "000")
+          if [ "$HTTP_CODE" = "000" ]; then
+            echo "WARN: Port 3000 did not respond (expected in headless CI). Check logs for context."
+            docker logs "$CONTAINER_NAME" --tail 30
+          else
+            echo "Port 3000 responded with HTTP $HTTP_CODE."
+          fi
+
+          # Cleanup
+          echo "Test complete. Stopping container..."
+          docker kill "$CONTAINER_NAME" >/dev/null 2>&1 || true
+          docker rm -f "$CONTAINER_NAME" >/dev/null 2>&1 || true
+          echo "PASS: Docker image smoke test passed."
         
   push-to-ghcr:
     runs-on: ubuntu-latest
