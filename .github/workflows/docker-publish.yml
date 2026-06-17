@@ -47,10 +47,13 @@ jobs:
           CONTAINER_NAME="hermes-webtop-test"
           TIMEOUT=120
 
-          # Start container with shm-size (required by webtop) and capture logs
+          # Start container with shm-size (required by webtop) and all service ports mapped
           docker run -d --name "$CONTAINER_NAME" \
             --shm-size=1gb \
             -p 3000:3000 \
+            -p 8888:8888 \
+            -p 7352:7352 \
+            -p 20128:20128 \
             hermes-webtop:test
 
           # Wait for init scripts to complete (poll for known log markers)
@@ -92,15 +95,31 @@ jobs:
             exit 1
           fi
 
-          # Verify at least one mapped port is responding
-          echo "Checking port 3000 (WebTop)..."
-          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 http://localhost:3000 2>/dev/null || echo "000")
-          if [ "$HTTP_CODE" = "000" ]; then
-            echo "WARN: Port 3000 did not respond (expected in headless CI). Check logs for context."
+          # Verify all service ports are responding
+          FAILED_PORTS=""
+          echo ""
+          echo "=== Service Port Health Checks ==="
+          for pair in "3000:WebTop" "8888:CodeServer" "7352:ModelRelay" "20128:OmniRoute"; do
+            PORT="${pair%%:*}"
+            NAME="${pair##*:}"
+            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 "http://localhost:${PORT}" 2>/dev/null || echo "000")
+            if [ "$HTTP_CODE" = "000" ]; then
+              echo "  $NAME (:$PORT) — ❌ no response"
+              FAILED_PORTS="$FAILED_PORTS $PORT"
+            else
+              echo "  $NAME (:$PORT) — ✅ HTTP $HTTP_CODE"
+            fi
+          done
+
+          if [ -n "$FAILED_PORTS" ]; then
+            echo ""
+            echo "WARN: Some ports did not respond:$FAILED_PORTS"
+            echo "      This may be expected in headless CI (WebTop display-dependent services)."
+            echo "      Check container logs for details: docker logs $CONTAINER_NAME --tail 50"
             docker logs "$CONTAINER_NAME" --tail 30
-          else
-            echo "Port 3000 responded with HTTP $HTTP_CODE."
           fi
+
+          echo ""
 
           # Cleanup
           echo "Test complete. Stopping container..."
