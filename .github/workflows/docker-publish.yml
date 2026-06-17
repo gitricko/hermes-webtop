@@ -95,31 +95,67 @@ jobs:
             exit 1
           fi
 
-          # Verify all service ports are responding
-          FAILED_PORTS=""
+          # Poll all service ports until all respond or timeout
+          PORT_POLL_TIMEOUT=60
+          POLL_STARTED_AT=$(date +%s)
+          declare -A RESPONDED
           echo ""
-          echo "=== Service Port Health Checks ==="
-          for pair in "3000:WebTop" "8888:CodeServer" "7352:ModelRelay" "20128:OmniRoute"; do
-            PORT="${pair%%:*}"
-            NAME="${pair##*:}"
-            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 "http://localhost:${PORT}" 2>/dev/null) || HTTP_CODE="000"
-            # Trim trailing whitespace (curl -w can add newlines on some versions)
-            HTTP_CODE=$(echo "$HTTP_CODE" | tr -d '[:space:]')
-            if [ -z "$HTTP_CODE" ] || [ "$HTTP_CODE" = "000" ]; then
-              echo "  $NAME (:$PORT) — ❌ no response"
-              FAILED_PORTS="$FAILED_PORTS $PORT"
-            else
-              echo "  $NAME (:$PORT) — ✅ HTTP $HTTP_CODE"
-            fi
-          done
+          echo "=== Polling Service Ports (${PORT_POLL_TIMEOUT}s timeout) ==="
 
-          if [ -n "$FAILED_PORTS" ]; then
-            echo ""
-            echo "WARN: Some ports did not respond:$FAILED_PORTS"
-            echo "      This may be expected in headless CI (WebTop display-dependent services)."
-            echo "      Check container logs for details: docker logs $CONTAINER_NAME --tail 50"
-            docker logs "$CONTAINER_NAME" --tail 30
-          fi
+          while true; do
+            NOW=$(date +%s)
+            ELAPSED=$((NOW - POLL_STARTED_AT))
+
+            if [ "$ELAPSED" -gt "$PORT_POLL_TIMEOUT" ]; then
+              echo ""
+              echo "→ FAIL: Port poll timeout after ${PORT_POLL_TIMEOUT}s — not all services responded"
+              for pair in "3000:WebTop" "8888:CodeServer" "7352:ModelRelay" "20128:OmniRoute"; do
+                PORT="${pair%%:*}"
+                NAME="${pair##*:}"
+                if [ "${RESPONDED[$PORT]}" != "true" ]; then
+                  echo "  • $NAME (:$PORT) — ❌ never responded"
+                fi
+              done
+              docker logs "$CONTAINER_NAME" --tail 50
+              docker kill "$CONTAINER_NAME" >/dev/null 2>&1 || true
+              docker rm -f "$CONTAINER_NAME" >/dev/null 2>&1 || true
+              exit 1
+            fi
+
+            for pair in "3000:WebTop" "8888:CodeServer" "7352:ModelRelay" "20128:OmniRoute"; do
+              PORT="${pair%%:*}"
+              NAME="${pair##*:}"
+
+              if [ "${RESPONDED[$PORT]}" = "true" ]; then
+                continue
+              fi
+
+              HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 "http://localhost:${PORT}" 2>/dev/null) || HTTP_CODE="000"
+              HTTP_CODE=$(echo "$HTTP_CODE" | tr -d '[:space:]')
+
+              if [ -n "$HTTP_CODE" ] && [ "$HTTP_CODE" != "000" ]; then
+                echo "  $NAME (:$PORT) — ✅ HTTP ${HTTP_CODE} (${ELAPSED}s)"
+                RESPONDED[$PORT]="true"
+              fi
+            done
+
+            # Check if all ports responded
+            ALL_RESPONDED=true
+            for port in 3000 8888 7352 20128; do
+              if [ "${RESPONDED[$port]}" != "true" ]; then
+                ALL_RESPONDED=false
+                break
+              fi
+            done
+
+            if [ "$ALL_RESPONDED" = "true" ]; then
+              echo ""
+              echo "→ PASS: All service ports responded within ${ELAPSED}s"
+              break
+            fi
+
+            sleep 5
+          done
 
           echo ""
 
