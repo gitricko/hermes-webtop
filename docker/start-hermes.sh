@@ -102,3 +102,10 @@ for i in $(seq 1 20); do
   fi
   sleep 3
 done
+
+# Run boot-time health self-check after all services are ready
+echo "[start-hermes] Running boot-time health self-check..."
+/usr/local/bin/self-check || echo "[start-hermes] WARNING: self-check reported issues"
+
+# Wait for background hermes services to naturally complete (handled by the & above)
+wait

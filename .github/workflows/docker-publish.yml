@@ -158,6 +158,27 @@ jobs:
           done
 
           echo ""
+          echo "=== Running boot-time self-check validation ==="
+          # Execute the self-check script inside the container.
+          # We check the exit status. In headless CI, some warnings might be present,
+          # but critical errors (exit code 2) must trigger build failure.
+          if ! docker exec "$CONTAINER_NAME" self-check; then
+            SELF_CHECK_STATUS=$?
+            echo "Self-check exited with status: $SELF_CHECK_STATUS"
+            if [ "$SELF_CHECK_STATUS" -eq 2 ]; then
+              echo "FAIL: Self-check reported critical stack errors."
+              docker exec "$CONTAINER_NAME" cat /tmp/health-report.json || true
+              docker kill "$CONTAINER_NAME" >/dev/null 2>&1 || true
+              docker rm -f "$CONTAINER_NAME" >/dev/null 2>&1 || true
+              exit 2
+            fi
+            echo "Self-check warning caught (non-critical)."
+          fi
+
+          echo "=== Verified Health Report JSON ==="
+          docker exec "$CONTAINER_NAME" cat /tmp/health-report.json | jq -r
+
+          echo ""
 
           # Cleanup
           echo "Test complete. Stopping container..."

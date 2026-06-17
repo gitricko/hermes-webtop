@@ -1,9 +1,9 @@
 ARG HERMES_VERSION="v2026.6.5"
-ARG OMNIROUTE_VERSION=3.8.26
+ARG OMNIROUTE_VERSION=3.8.27
 ARG MODELRELAY_VERSION=1.17.1
 ARG OLLAMA_VERSION=0.30.8
 ARG NODE_VERSION=24
-ARG CODE_SERVER_VERSION=4.123.0
+ARG CODE_SERVER_VERSION=4.124.2
 ARG MNEMON_VERSION=0.1.14
 ARG TARGETARCH
 
@@ -44,6 +44,9 @@ RUN mkdir -p /custom-cont-init.d
 COPY --chown=abc:abc *.sh /custom-cont-init.d
 COPY --chown=abc:abc *.json /custom-cont-init.d
 COPY --chown=abc:abc *.md /custom-cont-init.d
+
+# Move self-check to usr/local/bin to prevent it running as a boot-time init script
+RUN mv /custom-cont-init.d/self-check.sh /usr/local/bin/self-check && chmod +x /usr/local/bin/self-check
 
 # Install Hermes
 ARG HERMES_VERSION
