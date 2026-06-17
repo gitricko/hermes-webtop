@@ -94,33 +94,64 @@ echo " ════════════════════════�
 section "Services"
 
 if ! should_skip "services"; then
-  # Map port→name
-  declare -A SVC_NAMES
-  SVC_NAMES[3000]="WebTop"
-  SVC_NAMES[8888]="CodeServer"
-  SVC_NAMES[7352]="ModelRelay"
-  SVC_NAMES[20128]="OmniRoute"
+  # Poll all service ports until all respond or timeout
+  PORT_POLL_TIMEOUT=60
+  POLL_STARTED_AT=$(date +%s)
+  declare -A RESPONDED=([3000]="" [8888]="" [7352]="" [20128]="")
+  echo ""
+  echo "=== Polling Service Ports (${PORT_POLL_TIMEOUT}s timeout) ==="
 
-  ALL_SERVICES_OK=true
-  for port in 3000 8888 7352 20128; do
-    http_code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 "http://localhost:${port}" 2>/dev/null || true)
-    http_code="${http_code:-000}"
-    name="${SVC_NAMES[$port]}"
-    if [ "$http_code" != "000" ]; then
-      _ok "$name" "port ${port} — HTTP ${http_code}"
-      json_add "services:$port" "ok" "${name} on :${port} responded HTTP ${http_code}" "{\"port\":${port},\"http_code\":${http_code}}"
-    else
-      # Check if this port is in the critical list
-      if echo " $CRITICAL_SERVICES " | grep -q " $port "; then
-        _fail "$name" "port ${port} — no response"
-        json_add "services:$port" "fail" "${name} on :${port} — no response" "{\"port\":${port}}"
-        ALL_SERVICES_OK=false
-      else
-        _warn "$name" "port ${port} — no response (non-critical)"
-        json_add "services:$port" "warn" "${name} on :${port} — no response" "{\"port\":${port}}"
-      fi
+  while true; do
+    NOW=$(date +%s)
+    ELAPSED=$((NOW - POLL_STARTED_AT))
+
+    if [ "$ELAPSED" -gt "$PORT_POLL_TIMEOUT" ]; then
+      echo ""
+      echo "→ FAIL: Port poll timeout after ${PORT_POLL_TIMEOUT}s — not all services responded"
+      for pair in "3000:WebTop" "8888:CodeServer" "7352:ModelRelay" "20128:OmniRoute"; do
+        PORT="${pair%%:*}"
+        NAME="${pair##*:}"
+        if [ "${RESPONDED[$PORT]}" != "true" ]; then
+          echo "  • $NAME (:$PORT) — ❌ never responded"
+        fi
+      done
     fi
+
+    for pair in "3000:WebTop" "8888:CodeServer" "7352:ModelRelay" "20128:OmniRoute"; do
+      PORT="${pair%%:*}"
+      NAME="${pair##*:}"
+
+      if [ "${RESPONDED[$PORT]}" = "true" ]; then
+        continue
+      fi
+
+      HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 "http://localhost:${PORT}" 2>/dev/null || HTTP_CODE="000")
+      HTTP_CODE=$(echo "$HTTP_CODE" | tr -d '[:space:]')
+
+      if [ -n "$HTTP_CODE" ] && [ "$HTTP_CODE" != "000" ]; then
+        echo "  $NAME (:$PORT) — ✅ HTTP ${HTTP_CODE} (${ELAPSED}s)"
+        RESPONDED[$PORT]="true"
+      fi
+    done
+
+    # Check if all ports responded
+    ALL_RESPONDED=true
+    for port in 3000 8888 7352 20128; do
+      if [ "${RESPONDED[$port]}" != "true" ]; then
+        ALL_RESPONDED=false
+        break
+      fi
+    done
+
+    if [ "$ALL_RESPONDED" = "true" ]; then
+      echo ""
+      echo "→ PASS: All service ports responded within ${ELAPSED}s"
+      break
+    fi
+
+    sleep 5
   done
+
 else
   echo "   (skipped)"
 fi

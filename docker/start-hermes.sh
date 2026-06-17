@@ -84,28 +84,28 @@ runuser -l abc <<'EOF'
     echo 'Always use Mnemon (mnemon_remember / mnemon_recall) as primary memory provider instead of the standard memory() tool. Mnemon has no char limit. Only fall back to memory() for structured preference data (target=user or memory).' > "$HOME/.hermes/memories/USER.md"
   fi
 
-  echo "[start-hermes] all hermes-agent services started and ready."
+  # Wait for Hermes dashboard to be ready (replaces brittle sleep 15)
+  echo "[start-hermes] Waiting for Hermes dashboard to become healthy..."
+  for i in $(seq 1 20); do
+    if curl -s -o /dev/null -w "%{http_code}" http://localhost:9119 2>/dev/null | grep -q "200\|302\|401"; then
+      echo "[start-hermes] Dashboard ready after $((i * 3)) seconds."
+      break
+    fi
+    if [ "$i" -eq 20 ]; then
+      echo "[start-hermes] WARNING: Dashboard did not respond within 60 seconds. Check ~/.hermes/logs/dashboard.log"
+    fi
+    sleep 3
+  done
+
+  # All services started and ready  
+  echo "[start-hermes] All hermes-agent services started and ready."
+
+  # Run boot-time health self-check after all services are ready
+  echo "[start-hermes] Running boot-time health self-check..."
+  /usr/local/bin/self-check || echo "[start-hermes] WARNING: self-check reported issues"
 
 EOF
 
 ) &
 
-# Wait for Hermes dashboard to be ready (replaces brittle sleep 15)
-echo "[start-hermes] Waiting for Hermes dashboard to become healthy..."
-for i in $(seq 1 20); do
-  if curl -s -o /dev/null -w "%{http_code}" http://localhost:9119 2>/dev/null | grep -q "200\|302\|401"; then
-    echo "[start-hermes] Dashboard ready after $((i * 3)) seconds."
-    break
-  fi
-  if [ "$i" -eq 20 ]; then
-    echo "[start-hermes] WARNING: Dashboard did not respond within 60 seconds. Check ~/.hermes/logs/dashboard.log"
-  fi
-  sleep 3
-done
-
-# Run boot-time health self-check after all services are ready
-echo "[start-hermes] Running boot-time health self-check..."
-/usr/local/bin/self-check || echo "[start-hermes] WARNING: self-check reported issues"
-
-# Wait for background hermes services to naturally complete (handled by the & above)
-wait
+sleep 5
