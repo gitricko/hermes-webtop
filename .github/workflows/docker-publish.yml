@@ -159,10 +159,10 @@ jobs:
 
           echo ""
           echo "=== Running boot-time self-check validation ==="
-          # Execute the self-check.sh script inside the container.
+          # Execute the self-check script inside the container.
           # We check the exit status. In headless CI, some warnings might be present,
           # but critical errors (exit code 2) must trigger build failure.
-          if ! docker exec "$CONTAINER_NAME" /docker/self-check.sh; then
+          if ! docker exec "$CONTAINER_NAME" self-check; then
             SELF_CHECK_STATUS=$?
             echo "Self-check exited with status: $SELF_CHECK_STATUS"
             if [ "$SELF_CHECK_STATUS" -eq 2 ]; then

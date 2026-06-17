@@ -45,6 +45,9 @@ COPY --chown=abc:abc *.sh /custom-cont-init.d
 COPY --chown=abc:abc *.json /custom-cont-init.d
 COPY --chown=abc:abc *.md /custom-cont-init.d
 
+# Move self-check to usr/local/bin to prevent it running as a boot-time init script
+RUN mv /custom-cont-init.d/self-check.sh /usr/local/bin/self-check && chmod +x /usr/local/bin/self-check
+
 # Install Hermes
 ARG HERMES_VERSION
 RUN curl -fsSL "https://raw.githubusercontent.com/NousResearch/hermes-agent/${HERMES_VERSION}/scripts/install.sh" | bash -s -- --skip-setup && \

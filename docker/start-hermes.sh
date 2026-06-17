@@ -105,7 +105,7 @@ done
 
 # Run boot-time health self-check after all services are ready
 echo "[start-hermes] Running boot-time health self-check..."
-/docker/self-check.sh || echo "[start-hermes] WARNING: self-check reported issues"
+/usr/local/bin/self-check || echo "[start-hermes] WARNING: self-check reported issues"
 
 # Wait for background hermes services to naturally complete (handled by the & above)
 wait
