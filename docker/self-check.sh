@@ -341,13 +341,22 @@ EOF
 
 # ── Telegram delivery (auto-discovered from Hermes config) ──────────────────
 TELEGRAM_BOT_TOKEN="${TELEGRAM_BOT_TOKEN:-}"
-TELEGRAM_CHAT_ID=""
-
-# Read chat_id from Hermes config.yaml (check both allowed_chats and chat_id keys)
-if [ -f "$HERMES_CONFIG" ]; then
-  # Try telegram.chat_id first — guard with || true for set -e safety
+# Fall back to Hermes .env credential store if not set in env
+if [ -z "$TELEGRAM_BOT_TOKEN" ] && [ -f "$HOME/.hermes/.env" ]; then
+  TELEGRAM_BOT_TOKEN=$(grep '^TELEGRAM_BOT_TOKEN=' "$HOME/.hermes/.env" | head -1 | sed 's/^TELEGRAM_BOT_TOKEN=//' | tr -d '"' || true)
+fi
+TELEGRAM_CHAT_ID="${TELEGRAM_CHAT_ID:-}"
+# Fall back to TELEGRAM_HOME_CHANNEL env var (Hermes convention)
+if [ -z "$TELEGRAM_CHAT_ID" ]; then
+  TELEGRAM_CHAT_ID="${TELEGRAM_HOME_CHANNEL:-}"
+fi
+# Fall back to Hermes .env credential store
+if [ -z "$TELEGRAM_CHAT_ID" ] && [ -f "$HOME/.hermes/.env" ]; then
+  TELEGRAM_CHAT_ID=$(grep '^TELEGRAM_HOME_CHANNEL=' "$HOME/.hermes/.env" | head -1 | sed 's/^TELEGRAM_HOME_CHANNEL=//' | tr -d '"' || true)
+fi
+# Fall back to config.yaml (backward compat)
+if [ -z "$TELEGRAM_CHAT_ID" ] && [ -f "$HERMES_CONFIG" ]; then
   TELEGRAM_CHAT_ID=$(grep -A10 '^telegram:' "$HERMES_CONFIG" 2>/dev/null | grep 'chat_id' | head -1 | sed 's/.*chat_id: *//' | tr -d '" ' | tr -d ' ') || true
-  # Fall back to allowed_chats if chat_id not found
   if [ -z "$TELEGRAM_CHAT_ID" ]; then
     TELEGRAM_CHAT_ID=$(grep -A10 '^telegram:' "$HERMES_CONFIG" 2>/dev/null | grep 'allowed_chats' | head -1 | sed 's/.*allowed_chats: *//' | tr -d '" ' | tr -d ' ') || true
   fi
@@ -406,7 +415,7 @@ if warns:
     -d "disable_web_page_preview=true" \
     --max-time 10 >/dev/null 2>&1 && echo "  [telegram] notification sent" || echo "  [telegram] failed to send"
 else
-  echo "  [telegram] not configured — stdout only (set TELEGRAM_BOT_TOKEN and configure telegram in ~/.hermes/config.yaml)"
+  echo "  [telegram] not configured — stdout only (set TELEGRAM_BOT_TOKEN and TELEGRAM_HOME_CHANNEL in ~/.hermes/.env)"
 fi
 
 exit "$EXIT_CODE"
