@@ -90,6 +90,48 @@ echo "  ${BOLD}HERMES-WEBTOP HEALTH REPORT${NC}"
 echo "  $(date -u)"
 echo " ════════════════════════════════════════════════════════════"
 
+# ── 0. Cleanup ───────────────────────────────────────────────────────────────
+# Purge stale ACP sessions from state.db. These are VSCode/IDE extension
+# sessions that get persisted across container reboots but become unrecoverable
+# because the saved provider config (billing_provider, model) no longer matches
+# the current runtime config. Deleting them on every boot lets the VSCode
+# extension fall through gracefully to creating a fresh session.
+section "Cleanup"
+STATE_DB="${HOME:-/config}/.hermes/state.db"
+if [ -f "$STATE_DB" ]; then
+  python3 -c "
+import sqlite3, os
+db_path = os.path.expanduser('$STATE_DB')
+try:
+    db = sqlite3.connect(db_path)
+    cursor = db.execute(\"SELECT COUNT(*) FROM sessions WHERE source='acp'\")
+    count = cursor.fetchone()[0]
+    if count > 0:
+        db.execute(\"DELETE FROM sessions WHERE source='acp'\")
+        db.commit()
+        print(count)
+    else:
+        print(0)
+    db.close()
+except Exception:
+    print(-1)
+" 2>/dev/null | while read n; do
+    if [ "$n" -gt 0 ]; then
+      _ok "ACP sessions" "purged ${n} stale session(s) from state.db"
+      json_add "cleanup:acp-sessions" "ok" "purged ${n} stale sessions" "{\"purged\":${n}}"
+    elif [ "$n" = "0" ]; then
+      _ok "ACP sessions" "none to clean"
+      json_add "cleanup:acp-sessions" "ok" "no stale sessions" "{}"
+    else
+      _warn "ACP sessions" "cleanup query failed"
+      json_add "cleanup:acp-sessions" "warn" "cleanup failed" "{}"
+    fi
+  done
+else
+  _ok "ACP sessions" "no state.db yet"
+  json_add "cleanup:acp-sessions" "ok" "state.db not found" "{}"
+fi
+
 # ── 1. Services ──────────────────────────────────────────────────────────────
 section "Services"
 
