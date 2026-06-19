@@ -90,20 +90,25 @@ echo "  ${BOLD}HERMES-WEBTOP HEALTH REPORT${NC}"
 echo "  $(date -u)"
 echo " ════════════════════════════════════════════════════════════"
 
-# ── 0. Cleanup ───────────────────────────────────────────────────────────────
-# Purge stale ACP sessions from state.db. ACP sessions are VSCode/IDE extension
-# sessions that persist in state.db across container reboots. Some may still be
-# recoverable (if their saved billing_provider still exists in the current
-# config), others are unrecoverable (provider was removed/renamed).
+# ── 0. Fix ACP sessions ───────────────────────────────────────────────────────
+# Fix stale ACP sessions in state.db. ACP sessions are VSCode/IDE extension
+# sessions that persist in state.db across container reboots. Their saved
+# billing_provider may no longer exist in the current config.
 #
-# This checks each session individually: only deletes sessions whose
-# billing_provider no longer matches a configured provider, so recoverable
-# sessions from the same container lifetime are preserved.
+# IMPORTANT: We do NOT delete stale sessions. The ACP server's normalize_result
+# converts None from load_session into {} (empty dict). The extension interprets
+# {} as a successful load -- creating a "ghost session" that never responds.
+# Deleting the session makes this WORSE because the extension's locally-cached
+# session ID becomes a ghost with no escape hatch.
+#
+# Instead we UPDATE the provider to the current configured one and clear old
+# messages. This makes session/load succeed and the extension resumes with
+# a clean working conversation.
 section "Cleanup"
 STATE_DB="${HOME:-/config}/.hermes/state.db"
 if [ -f "$STATE_DB" ]; then
   python3 -c "
-import sqlite3, os, yaml
+import sqlite3, os, yaml, json
 
 db_path = os.path.expanduser('$STATE_DB')
 cfg_path = os.path.expanduser('~/.hermes/config.yaml')
@@ -119,34 +124,53 @@ try:
     if isinstance(mc, dict) and mc.get('provider'):
         configured.add(mc['provider'])
 
-    # 2. Check each ACP session
+    # 2. Read current model provider as the replacement
+    current_provider = mc.get('provider') if isinstance(mc, dict) else None
+    if not current_provider:
+        current_provider = 'omniroute'
+    current_base_url = ''
+    providers_cfg = cfg.get('providers', {}) or {}
+    curr = providers_cfg.get(current_provider, {}) or {}
+    current_base_url = curr.get('base_url', '')
+
+    # 3. Check each ACP session
     db = sqlite3.connect(db_path)
     rows = db.execute('''
         SELECT id, billing_provider FROM sessions
         WHERE source='acp'
     ''').fetchall()
-    
-    purged = 0
+
+    fixed = 0
     kept = 0
     for sid, bp in rows:
         if bp is None or bp in configured:
             kept += 1
         else:
-            purged += 1
-            db.execute('DELETE FROM sessions WHERE id=?', (sid,))
+            # Fix: update provider to current, clear messages
+            db.execute('''
+                UPDATE sessions SET billing_provider=?,
+                    billing_base_url=?, billing_mode='chat_completions',
+                    model_config=?
+                WHERE id=?
+            ''', (current_provider, current_base_url,
+                  json.dumps({'provider': current_provider,
+                              'base_url': current_base_url}),
+                  sid))
+            db.execute('DELETE FROM messages WHERE session_id=?', (sid,))
+            fixed += 1
     db.commit()
     db.close()
-    print(f'{purged} {kept}')
+    print(f'{fixed} {kept}')
 except Exception:
     print('-1 -1')
-" 2>/dev/null | while read purged kept; do
-    [ -z "$purged" ] && purged=0
+" 2>/dev/null | while read fixed kept; do
+    [ -z "$fixed" ] && fixed=0
     [ -z "$kept" ] && kept=0
-    if [ "$purged" -gt 0 ] 2>/dev/null; then
-      _ok "ACP sessions" "purged ${purged} stale session(s), kept ${kept}"
-      json_add "cleanup:acp-sessions" "ok" "purged ${purged} stale, kept ${kept}" "{\"purged\":${purged},\"kept\":${kept}}"
-    elif [ "$purged" = "0" ] 2>/dev/null && [ "$kept" -ge 0 ] 2>/dev/null; then
-      _ok "ACP sessions" "none to clean (${kept} kept)"
+    if [ "$fixed" -gt 0 ] 2>/dev/null; then
+      _ok "ACP sessions" "fixed ${fixed} stale session(s), kept ${kept}"
+      json_add "cleanup:acp-sessions" "ok" "fixed ${fixed} stale, kept ${kept}" "{\"fixed\":${fixed},\"kept\":${kept}}"
+    elif [ "$fixed" = "0" ] 2>/dev/null && [ "$kept" -ge 0 ] 2>/dev/null; then
+      _ok "ACP sessions" "none to fix (${kept} kept)"
       json_add "cleanup:acp-sessions" "ok" "no stale sessions" "{\"kept\":${kept}}"
     else
       _warn "ACP sessions" "cleanup query failed"
