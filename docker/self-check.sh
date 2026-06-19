@@ -90,6 +90,74 @@ echo "  ${BOLD}HERMES-WEBTOP HEALTH REPORT${NC}"
 echo "  $(date -u)"
 echo " ════════════════════════════════════════════════════════════"
 
+# ── 0. Cleanup ───────────────────────────────────────────────────────────────
+# Purge stale ACP sessions from state.db. ACP sessions are VSCode/IDE extension
+# sessions that persist in state.db across container reboots. Some may still be
+# recoverable (if their saved billing_provider still exists in the current
+# config), others are unrecoverable (provider was removed/renamed).
+#
+# This checks each session individually: only deletes sessions whose
+# billing_provider no longer matches a configured provider, so recoverable
+# sessions from the same container lifetime are preserved.
+section "Cleanup"
+STATE_DB="${HOME:-/config}/.hermes/state.db"
+if [ -f "$STATE_DB" ]; then
+  python3 -c "
+import sqlite3, os, yaml
+
+db_path = os.path.expanduser('$STATE_DB')
+cfg_path = os.path.expanduser('~/.hermes/config.yaml')
+
+try:
+    # 1. Build set of configured providers
+    configured = set()
+    with open(cfg_path) as f:
+        cfg = yaml.safe_load(f) or {}
+    configured.update((cfg.get('providers') or {}).keys())
+    configured.update((cfg.get('custom_providers') or {}).keys())
+    mc = cfg.get('model', {})
+    if isinstance(mc, dict) and mc.get('provider'):
+        configured.add(mc['provider'])
+
+    # 2. Check each ACP session
+    db = sqlite3.connect(db_path)
+    rows = db.execute('''
+        SELECT id, billing_provider FROM sessions
+        WHERE source='acp'
+    ''').fetchall()
+    
+    purged = 0
+    kept = 0
+    for sid, bp in rows:
+        if bp is None or bp in configured:
+            kept += 1
+        else:
+            purged += 1
+            db.execute('DELETE FROM sessions WHERE id=?', (sid,))
+    db.commit()
+    db.close()
+    print(f'{purged} {kept}')
+except Exception:
+    print('-1 -1')
+" 2>/dev/null | while read purged kept; do
+    [ -z "$purged" ] && purged=0
+    [ -z "$kept" ] && kept=0
+    if [ "$purged" -gt 0 ] 2>/dev/null; then
+      _ok "ACP sessions" "purged ${purged} stale session(s), kept ${kept}"
+      json_add "cleanup:acp-sessions" "ok" "purged ${purged} stale, kept ${kept}" "{\"purged\":${purged},\"kept\":${kept}}"
+    elif [ "$purged" = "0" ] 2>/dev/null && [ "$kept" -ge 0 ] 2>/dev/null; then
+      _ok "ACP sessions" "none to clean (${kept} kept)"
+      json_add "cleanup:acp-sessions" "ok" "no stale sessions" "{\"kept\":${kept}}"
+    else
+      _warn "ACP sessions" "cleanup query failed"
+      json_add "cleanup:acp-sessions" "warn" "cleanup failed" "{}"
+    fi
+  done
+else
+  _ok "ACP sessions" "no state.db yet"
+  json_add "cleanup:acp-sessions" "ok" "state.db not found" "{}"
+fi
+
 # ── 1. Services ──────────────────────────────────────────────────────────────
 section "Services"
 
