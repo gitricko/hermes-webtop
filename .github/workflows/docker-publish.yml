@@ -79,7 +79,7 @@ jobs:
             fi
 
             # If we see Hermes services started but no dashboard probe, that's OK too
-            if echo "$LOGS" | grep -q "all hermes-agent services started and ready"; then
+            if echo "$LOGS" | grep -q "All hermes-agent services started and ready"; then
               echo "PASS: Hermes services reported ready."
               break
             fi
