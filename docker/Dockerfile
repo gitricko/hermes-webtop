@@ -1,5 +1,5 @@
 ARG HERMES_VERSION="v2026.6.19"
-ARG OMNIROUTE_VERSION=3.8.31
+ARG OMNIROUTE_VERSION=3.8.33
 ARG MODELRELAY_VERSION=1.17.1
 ARG OLLAMA_VERSION=0.30.8
 ARG NODE_VERSION=24
@@ -79,6 +79,9 @@ RUN curl -fsSL https://code-server.dev/install.sh | sh -s -- --version=${CODE_SE
 
 # Switch to the abc user and set zsh as the default shell for both root and abc
 RUN usermod -s $(which zsh) root; usermod -s $(which zsh) abc
+
+# Install TailScale
+RUN mkdir -p /var/run/tailscale /var/lib/tailscale && curl -fsSL https://tailscale.com/install.sh | sh && rm -rf /var/lib/apt/lists/*
 
 # Install mnemon
 ARG MNEMON_VERSION
