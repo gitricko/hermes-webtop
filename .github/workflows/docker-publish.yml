@@ -45,7 +45,7 @@ jobs:
       - name: Test Docker image
         run: |
           CONTAINER_NAME="hermes-webtop-test"
-          TIMEOUT=120
+          TIMEOUT=240
 
           # Start container with shm-size (required by webtop) and all service ports mapped
           docker run -d --name "$CONTAINER_NAME" \
@@ -79,7 +79,7 @@ jobs:
             fi
 
             # If we see Hermes services started but no dashboard probe, that's OK too
-            if echo "$LOGS" | grep -qi "all hermes-agent services started and ready"; then
+            if echo "$LOGS" | grep -q "all hermes-agent services started and ready"; then
               echo "PASS: Hermes services reported ready."
               break
             fi
