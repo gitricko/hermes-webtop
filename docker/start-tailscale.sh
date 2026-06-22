@@ -2,7 +2,7 @@
 echo "[start-tailscale] Starting tailscale..."
 
 # Start the daemon with userspace networking
-sudo tailscaled -tun userspace-networking --statedir /config/.tailscale > /dev/null 2>&1 &
+sudo tailscaled --statedir /config/.tailscale > /dev/null 2>&1 &
 
 # Check if tailscaled is running (up to MAX_ATTEMPTS checks)
 MAX_ATTEMPTS=30

@@ -47,6 +47,11 @@ services:
     networks:
       - hermes-webtop-net
 
+    devices:
+      - /dev/net/tun
+    cap_add:
+      - NET_ADMIN
+
 networks:
   hermes-webtop-net:
     driver: bridge
