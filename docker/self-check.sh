@@ -90,74 +90,6 @@ echo "  ${BOLD}HERMES-WEBTOP HEALTH REPORT${NC}"
 echo "  $(date -u)"
 echo " ════════════════════════════════════════════════════════════"
 
-# ── 0. Cleanup ───────────────────────────────────────────────────────────────
-# Purge stale ACP sessions from state.db. ACP sessions are VSCode/IDE extension
-# sessions that persist in state.db across container reboots. Some may still be
-# recoverable (if their saved billing_provider still exists in the current
-# config), others are unrecoverable (provider was removed/renamed).
-#
-# This checks each session individually: only deletes sessions whose
-# billing_provider no longer matches a configured provider, so recoverable
-# sessions from the same container lifetime are preserved.
-# section "Cleanup"
-# STATE_DB="${HOME:-/config}/.hermes/state.db"
-# if [ -f "$STATE_DB" ]; then
-#   python3 -c "
-# import sqlite3, os, yaml
-
-# db_path = os.path.expanduser('$STATE_DB')
-# cfg_path = os.path.expanduser('~/.hermes/config.yaml')
-
-# try:
-#     # 1. Build set of configured providers
-#     configured = set()
-#     with open(cfg_path) as f:
-#         cfg = yaml.safe_load(f) or {}
-#     configured.update((cfg.get('providers') or {}).keys())
-#     configured.update((cfg.get('custom_providers') or {}).keys())
-#     mc = cfg.get('model', {})
-#     if isinstance(mc, dict) and mc.get('provider'):
-#         configured.add(mc['provider'])
-
-#     # 2. Check each ACP session
-#     db = sqlite3.connect(db_path)
-#     rows = db.execute('''
-#         SELECT id, billing_provider FROM sessions
-#         WHERE source='acp'
-#     ''').fetchall()
-    
-#     purged = 0
-#     kept = 0
-#     for sid, bp in rows:
-#         if bp is None or bp in configured:
-#             kept += 1
-#         else:
-#             purged += 1
-#             db.execute('DELETE FROM sessions WHERE id=?', (sid,))
-#     db.commit()
-#     db.close()
-#     print(f'{purged} {kept}')
-# except Exception:
-#     print('-1 -1')
-# " 2>/dev/null | while read purged kept; do
-#     [ -z "$purged" ] && purged=0
-#     [ -z "$kept" ] && kept=0
-#     if [ "$purged" -gt 0 ] 2>/dev/null; then
-#       _ok "ACP sessions" "purged ${purged} stale session(s), kept ${kept}"
-#       json_add "cleanup:acp-sessions" "ok" "purged ${purged} stale, kept ${kept}" "{\"purged\":${purged},\"kept\":${kept}}"
-#     elif [ "$purged" = "0" ] 2>/dev/null && [ "$kept" -ge 0 ] 2>/dev/null; then
-#       _ok "ACP sessions" "none to clean (${kept} kept)"
-#       json_add "cleanup:acp-sessions" "ok" "no stale sessions" "{\"kept\":${kept}}"
-#     else
-#       _warn "ACP sessions" "cleanup query failed"
-#       json_add "cleanup:acp-sessions" "warn" "cleanup failed" "{}"
-#     fi
-#   done
-# else
-#   _ok "ACP sessions" "no state.db yet"
-#   json_add "cleanup:acp-sessions" "ok" "state.db not found" "{}"
-# fi
-
 # ── 1. Services ──────────────────────────────────────────────────────────────
 section "Services"
 
@@ -165,7 +97,7 @@ if ! should_skip "services"; then
   # Poll all service ports until all respond or timeout
   PORT_POLL_TIMEOUT=60
   POLL_STARTED_AT=$(date +%s)
-  declare -A RESPONDED=([3000]="" [8888]="" [7352]="" [20128]="")
+  declare -A RESPONDED=([3000]="" [8888]="" [7352]="" [20128]="", [9119]="")
   echo ""
   echo "=== Polling Service Ports (${PORT_POLL_TIMEOUT}s timeout) ==="
 
@@ -176,7 +108,7 @@ if ! should_skip "services"; then
     if [ "$ELAPSED" -gt "$PORT_POLL_TIMEOUT" ]; then
       echo ""
       echo "→ FAIL: Port poll timeout after ${PORT_POLL_TIMEOUT}s — not all services responded"
-      for pair in "3000:WebTop" "8888:CodeServer" "7352:ModelRelay" "20128:OmniRoute"; do
+      for pair in "3000:WebTop" "8888:CodeServer" "7352:ModelRelay" "20128:OmniRoute", "9119:HermesGateway"; do
         PORT="${pair%%:*}"
         NAME="${pair##*:}"
         if [ "${RESPONDED[$PORT]}" != "true" ]; then
@@ -185,7 +117,7 @@ if ! should_skip "services"; then
       done
     fi
 
-    for pair in "3000:WebTop" "8888:CodeServer" "7352:ModelRelay" "20128:OmniRoute"; do
+    for pair in "3000:WebTop" "8888:CodeServer" "7352:ModelRelay" "20128:OmniRoute" "9119:HermesGateway"; do
       PORT="${pair%%:*}"
       NAME="${pair##*:}"
 
@@ -204,7 +136,7 @@ if ! should_skip "services"; then
 
     # Check if all ports responded
     ALL_RESPONDED=true
-    for port in 3000 8888 7352 20128; do
+    for port in 3000 8888 7352 20128 9119; do
       if [ "${RESPONDED[$port]}" != "true" ]; then
         ALL_RESPONDED=false
         break
@@ -278,7 +210,8 @@ if ! should_skip "hermes"; then
   if [ -f "$HERMES_CONFIG" ]; then
     cfg_model=$(grep -A1 '^model:' "$HERMES_CONFIG" 2>/dev/null | grep 'default' | head -1 | sed 's/.*default: *//' || echo "")
     cfg_provider=$(grep -A1 '^model:' "$HERMES_CONFIG" 2>/dev/null | grep 'provider' | head -1 | sed 's/.*provider: *//' || echo "")
-    has_gateway=$(curl -s -o /dev/null -w "%{http_code}" --max-time 3 "$HERMES_GATEWAY_URL" 2>/dev/null || echo "000")
+    has_gateway=$(curl -s -o /dev/null -w "%{http_code}" --max-time 3 "$HERMES_GATEWAY_URL" 2>/dev/null || true)
+    has_gateway="${has_gateway:-000}"
 
     if [ -n "$cfg_model" ]; then
       _ok "Config" "model=${cfg_model}, provider=${cfg_provider:-unset}"

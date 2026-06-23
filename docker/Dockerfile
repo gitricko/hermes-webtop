@@ -28,7 +28,7 @@ RUN GH_ARCH="${GH_ARCH:-${TARGETARCH:-amd64}}"; \
     && echo "deb [arch=${GH_ARCH} signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" > /etc/apt/sources.list.d/github-cli.list 
 
 # Install help utilities and clean up apt cache to reduce image size
-RUN apt-get update && apt-get install -y htop zsh ripgrep gh remmina && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y htop zsh ripgrep gh remmina iputils-ping net-tools socat && rm -rf /var/lib/apt/lists/*
 
 # Copy Node.js binaries and libraries
 COPY --from=node-bin --chown=abc:abc /usr/local/bin/node /usr/local/bin/

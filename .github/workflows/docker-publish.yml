@@ -54,6 +54,7 @@ jobs:
             -p 8888:8888 \
             -p 7352:7352 \
             -p 20128:20128 \
+            -p 9119:9119 \
             hermes-webtop:test
 
           # Wait for init scripts to complete (poll for known log markers)
@@ -109,7 +110,7 @@ jobs:
             if [ "$ELAPSED" -gt "$PORT_POLL_TIMEOUT" ]; then
               echo ""
               echo "→ FAIL: Port poll timeout after ${PORT_POLL_TIMEOUT}s — not all services responded"
-              for pair in "3000:WebTop" "8888:CodeServer" "7352:ModelRelay" "20128:OmniRoute"; do
+              for pair in "3000:WebTop" "8888:CodeServer" "7352:ModelRelay" "20128:OmniRoute" "9119:HermesGateway"; do
                 PORT="${pair%%:*}"
                 NAME="${pair##*:}"
                 if [ "${RESPONDED[$PORT]}" != "true" ]; then
@@ -122,7 +123,7 @@ jobs:
               exit 1
             fi
 
-            for pair in "3000:WebTop" "8888:CodeServer" "7352:ModelRelay" "20128:OmniRoute"; do
+            for pair in "3000:WebTop" "8888:CodeServer" "7352:ModelRelay" "20128:OmniRoute" "9119:HermesGateway"; do
               PORT="${pair%%:*}"
               NAME="${pair##*:}"
 
@@ -141,7 +142,7 @@ jobs:
 
             # Check if all ports responded
             ALL_RESPONDED=true
-            for port in 3000 8888 7352 20128; do
+            for port in 3000 8888 7352 20128 9119; do
               if [ "${RESPONDED[$port]}" != "true" ]; then
                 ALL_RESPONDED=false
                 break

@@ -32,6 +32,8 @@ services:
       - 3000:3000
       # hermes dashboard specific ports (adjust as needed)
       - 9119:9119
+      # hermes api server (if enabled)
+      - 8642:8642
       # modelrelay specific ports (adjust as needed)
       - 7352:7352
       # OmniRoute specific ports (adjust as needed)
