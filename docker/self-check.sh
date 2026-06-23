@@ -278,7 +278,8 @@ if ! should_skip "hermes"; then
   if [ -f "$HERMES_CONFIG" ]; then
     cfg_model=$(grep -A1 '^model:' "$HERMES_CONFIG" 2>/dev/null | grep 'default' | head -1 | sed 's/.*default: *//' || echo "")
     cfg_provider=$(grep -A1 '^model:' "$HERMES_CONFIG" 2>/dev/null | grep 'provider' | head -1 | sed 's/.*provider: *//' || echo "")
-    has_gateway=$(curl -s -o /dev/null -w "%{http_code}" --max-time 3 "$HERMES_GATEWAY_URL" 2>/dev/null || echo "000")
+    has_gateway=$(curl -s -o /dev/null -w "%{http_code}" --max-time 3 "$HERMES_GATEWAY_URL" 2>/dev/null || true)
+    has_gateway="${has_gateway:-000}"
 
     if [ -n "$cfg_model" ]; then
       _ok "Config" "model=${cfg_model}, provider=${cfg_provider:-unset}"
