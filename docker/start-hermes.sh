@@ -40,6 +40,13 @@ runuser -l abc <<'EOF'
     hermes config set agent.max_turns 120
     hermes config set kanban.failure_limit 3
 
+    # Populate default skill and .hermes.md
+    echo "[start-hermes] Installing Skill: memory-automation.md"
+    mkdir -p "$HOME/.hermes/skills/memory-automation"
+    cp /custom-cont-init.d/skill-memory-automation.md "$HOME/.hermes/skills/memory-automation/SKILL.md"
+
+    echo "[start-hermes] Populate .hermes.md"
+    cp /custom-cont-init.d/.hermes.md "$HOME/.hermes.md"
   fi
 
   mkdir -p  ~/.hermes/logs
