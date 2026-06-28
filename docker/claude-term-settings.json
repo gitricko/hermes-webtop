@@ -1,8 +1,8 @@
 {
   "env": {
     "ANTHROPIC_API_KEY": "sk-whatever",
-    "ANTHROPIC_BASE_URL": "http://localhost:7352",
-    "ANTHROPIC_MODEL": "claude-sonnet-4-5"
+    "ANTHROPIC_BASE_URL": "http://localhost:20128",
+    "ANTHROPIC_MODEL": "auto-fastest"
   },
   "permissions": {
     "defaultMode": "bypassPermissions",
