@@ -97,8 +97,8 @@ flowchart TB
 ## Components
 
 ### 🖥️ Browser
-**What it does:** Your web browser is the entry point — everything runs in browser tabs.
-**Port:** N/A (uses HTTP/HTTPS to :3000 and :8888)
+**What it does:** Your web browser is the entry point — everything runs in browser
+
 **Role in stack:** The only client-side software you need. No installation, no local tools.
 
 ### 🎨 WebTop GUI — Port 3000
