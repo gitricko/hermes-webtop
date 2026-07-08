@@ -2,6 +2,8 @@
 
 Hermes-WebTop is a self-contained Docker container that gives you a full Linux desktop with VS Code, an AI coding agent (Hermes), and multiple LLM backends — all accessible from your browser. It's a turnkey environment for AI-assisted development with "computer use" capabilities.
 
+All URI are explicitly configured not password protected. This is by design as author expects the container to be run behind a reverse proxy like Pomerium ( or github auth via codespace) and/or use Tailscale for secure access.
+
 ## Architecture Diagram
 
 ```mermaid
@@ -103,86 +105,118 @@ flowchart TB
 
 ### 🎨 WebTop GUI — Port 3000
 **What it does:** Provides a full Ubuntu MATE desktop environment inside your browser using KasmVNC.
+
 **Port:** `:3000` — started by the base `lscr.io/linuxserver/webtop` image.
+
 **How it starts:** Docker `ENTRYPOINT` from the base image. Always running while the container is up.
-**Role in stack:** Lets you use GUI apps, run browser testing, and visually monitor agents — the "computer use" interface.
+
+**Role in stack:** Lets you use Linux GUI apps, run non-headless browser testing, and useful for visually monitor agents on "computer use" interaction.
 
 ### 📝 Code-Server — Port 8888
-**What it does:** Runs VS Code in your browser with three AI extensions pre-installed (Hermes Code Agent, Cline, Claude Code).
+**What it does:** Runs VS Code in your browser with three AI extensions pre-installed (Hermes Code Agent, Cline, Claude Code). Access to Terminal based TUI cli via VS Code's web-based terminal interface. eg: CLI: `hermes` and `claude`
+
 **Port:** `:8888` — started by `/docker/start-codeserver.sh` at boot.
+
 **How it starts:** The init script installs the `code-server` binary and extensions, then launches it with `--auth none --bind-addr 0.0.0.0:8888`.
+
 **Role in stack:** Your primary development environment — where you write code and interact with Hermes through its VS Code extension or the integrated terminal.
 
 ### 📊 Hermes Dashboard — Port :9119 (Frontend/Web UI)
-**What it does:** A web UI for monitoring Hermes sessions, conversations, and agent activity — accessible directly from your browser.
-**Port:** `:9119` — the same port as the Hermes Gateway, served via socat forward from internal port `:9009`.
+**What it does:** A web UI for monitoring Hermes configuration, sessions, conversations, and agent activity — accessible directly from your browser.
+
+**Port:** `:9119` — the same port as the Hermes Gateway, served via socat forward from internal port `:9009` so that password setup Hermes Dashboard is not needed.
+
 **How it starts:** Started together with the Hermes Gateway by `/docker/start-hermes.sh`.
-**Role in stack:** Provides visibility into what Hermes is doing — active sessions, tool calls, and conversation history — without needing the terminal.
 
-### ⚡ Hermes Agent — Ports 9119 (Gateway/Dashboard)
+**Role in stack:** Provides visibility into what Hermes is doing — active sessions, kanban access, tool calls, and conversation history — without needing the terminal.
+
+### ⚡ Hermes Agent — (Gateway/CLI/VSCode Extension)
 **What it does:** The AI coding agent that processes your prompts, calls LLMs, and orchestrates complex multi-step tasks with sub-agents and tools.
-**Ports:** `:9119` (Gateway + Dashboard via socat), `:9009` (Dashboard internal), `:8642` (optional API).
+
 **How it starts:** `/docker/start-hermes.sh` installs Hermes, configures providers (OmniRoute as default, ModelRelay as fallback), enables mnemon memory, then launches the Gateway in background.
-**Role in stack:** The brain of the system — it receives your messages, delegates subtasks, calls LLMs through OmniRoute/ModelRelay, stores memories via Mnemon, and returns responses. On first boot it auto-configures: model=auto-fastest, approvals off, max_turns=120, kanban failure_limit=3, mnemon as memory provider. Every boot ensures python-telegram-bot is installed and clones/updates hermes-plugin-mnemon.
 
-**Sub-agents:** Hermes can spawn up to 3 child agent sessions in parallel via the `delegate_task` tool for complex multi-step tasks. Each sub-agent gets its own conversation, terminal, and tools, and is automatically killed when the parent session closes. This enables parallel work — one agent researches while another codes while a third tests.
-
-**Dashboard (Harness layer):** The Hermes Dashboard backend runs internally on port `:9009` and is forwarded to `:9119` via socat, providing the web UI for monitoring sessions, conversations, and agent activity.
+**Role in stack:** The brain of the system — it receives your messages, delegates sub-agents, calls LLMs through OmniRoute/ModelRelay, stores memories via Mnemon, and returns responses. On first boot it auto-configures: model=auto-fastest, approvals off, max_turns=120, kanban failure_limit=3, mnemon as memory provider. Every boot ensures python-telegram-bot is installed and clones/updates hermes-plugin-mnemon.
 
 ### 🔧 Hermes CLI
 **What it does:** The command-line interface to Hermes, accessible from any terminal inside the container (VS Code terminal, WebTop terminal).
+
 **How it starts:** Available once Hermes is installed. No separate port — uses the Gateway API or runs directly.
+
 **Role in stack:** The alternative interaction mode — type `hermes` commands directly in any terminal.
 
 ### 🤖 Claude CLI
 **What it does:** A separate AI coding assistant from Anthropic, accessible from the VS Code terminal alongside Hermes CLI. Provides an alternative agent experience with Claude models directly.
+
 **How it starts:** Installed via code-server extension setup. Available as `claude` command in any terminal.
-**Role in stack:** Complements Hermes — use Claude CLI for tasks better suited to Claude's specific strengths, while Hermes handles multi-tool orchestration. Both share Mnemon memory.
+
+**Role in stack:** Complements Hermes — use Claude CLI for tasks better suited to Claude's specific strengths, while Hermes handles multi-tool orchestration. Both share Mnemon memory. Can use Claude to fix hermes configuration issues since they are install in the same virtual machine.
 
 ### 🧠 Mnemon — Graph Memory Store
 **What it does:** A persistent memory system that stores facts, preferences, and project knowledge as a graph, using Ollama embeddings for semantic search.
+
 **How it starts:** CLI binary (v0.1.14). No server — runs as one-shot commands from Hermes and Claude Code.
-**Role in stack:** Gives Hermes long-term memory across sessions so it remembers your project context, past decisions, and preferences. Also integrated into Claude Code via `mnemon setup --yes --global --target claude-code`, so both Hermes and Claude Code inside VS Code share the same memory graph.
+
+**Role in stack:** Gives Hermes long-term memory across sessions (especially augemented with LLM-wiki) so it remembers your project context, past decisions, and preferences. Also integrated into Claude Code via `mnemon setup --yes --global --target claude-code`, so both Hermes and Claude Code inside VS Code share the same memory graph.
 
 ### 🌐 OmniRoute Dashboard — Port :20128 (Frontend/Web UI)
 **What it does:** The web-based management UI for OmniRoute. Provides a model router dashboard where you can monitor active routes, configure model providers, and view request logs.
+
 **Port:** `:20128` — served alongside the OmniRoute API on the same port.
+
 **How it starts:** Started automatically by `/docker/start-omniroute.sh` at boot alongside the API.
-**Role in stack:** Gives you a browser interface to see which models are available, manage routing configuration, and monitor LLM request activity.
+
+**Role in stack:** Delegate the model switching via omniroute instead of using Hermes's configuration. Enabled browser interface to see which models are available, manage routing configuration, and monitor LLM request activity.
 
 ### 🚦 OmniRoute API — Port :20128 (AI Layer)
 **What it does:** An intelligent multi-provider LLM router with auto-failover — chooses the best model for each request and falls back if one fails.
+
 **Port:** `:20128` — started by `/docker/start-omniroute.sh` at boot.
+
 **How it starts:** Globally installed via npm, launched as `omniroute serve --no-open --log`. On first boot, creates the `auto-fastest` combo with models `oc/deepseek-v4-flash-free` and `oc/big-pickle`. Redis is disabled (REDIS_URL=''). Login requirement is disabled on first boot. OmniRoute's database lives at `/config/.omniroute/storage.sqlite`. MCP (Model Context Protocol) is enabled and registered with Hermes.
+
 **Role in stack:** The default LLM provider for Hermes. Routes requests to available models, handles failures, and provides MCP integration.
 
 ### 📊 ModelRelay Dashboard — Port :7352 (Frontend/Web UI)
-**What it does:** A web monitoring UI for ModelRelay, showing proxy request status, model availability, and health metrics.
+**What it does:** Similar to Omniroute, enable free models out of box withoutn configuration.
+
 **Port:** `:7352` — served alongside the ModelRelay proxy on the same port.
+
 **How it starts:** Started automatically by `/docker/start-modelrelay.sh` at boot alongside the proxy.
+
 **Role in stack:** Provides visibility into free-tier proxy operations — useful for monitoring fallback requests and troubleshooting connectivity.
 
 ### 🔄 ModelRelay Proxy — Port :7352 (AI Layer)
 **What it does:** A free-tier LLM API proxy that acts as a fallback when OmniRoute cannot fulfill a request.
+
 **Port:** `:7352` — started by `/docker/start-modelrelay.sh` at boot.
+
 **How it starts:** Installed from the custom fork github:gitricko/modelrelay (not the public npm package), launched in an auto-restart loop. Pre-configured as the fallback provider in Hermes config.
+
 **Role in stack:** Safety net — if OmniRoute goes down or can't find a model, ModelRelay handles the request with its free-tier models.
 
 ### 🤖 Ollama — Port 11434 (internal only)
 **What it does:** A local LLM server that runs `nomic-embed-text` for generating text embeddings used by Mnemon.
+
 **Port:** `:11434` — started by `/docker/start-ollama.sh` at boot (not exposed outside the container).
+
 **How it starts:** Binary copied from the official Ollama Docker image, launched as `ollama serve` under user `abc`. Pulls `nomic-embed-text` after a 60-second startup delay.
+
 **Role in stack:** Powers Mnemon's semantic memory search by converting text into embeddings. Keeps memory operations fast and local.
 
 ### ⚡ Ollama GPU — External / Hosted GPU
 **What it does:** A remote Ollama instance running on a machine with a GPU, providing faster inference for local LLM tasks.
+
 **Port:** Uses OmniRoute/ModelRelay as proxy — no direct port.
+
 **How it connects:** Configured as a model provider in OmniRoute via the 'Config Free API' path. When the local CPU-based Ollama (:11434) is too slow, this external GPU-powered instance handles the heavy lifting.
+
 **Role in stack:** Accelerates local LLM workloads by offloading to GPU hardware without running GPU drivers inside the container.
 
 ### 🔒 Tailscale
 **What it does:** A zero-config VPN that lets you access the container securely from anywhere.
+
 **How it starts:** `/docker/start-tailscale.sh` at boot. Runs in userspace mode with statedir at `/config/.tailscale`.
+
 **Role in stack:** Provides secure remote access. Not auto-logged-in — you run `sudo tailscale up` manually when needed.
 
 ### 🩺 Self-Check — Diagnostics Tool at /usr/local/bin/self-check
@@ -195,10 +229,12 @@ flowchart TB
 
 ### 💾 Docker Volume — /config
 **What it does:** A named Docker volume mounted at `/config` that persists all data: Hermes config, OmniRoute database, VS Code extensions, mnemon data, Tailscale state, and user files.
+
 **Role in stack:** The single source of truth for persistent state — survive container restarts and re-creates.
 
 ### 🌐 Docker Network — hermes-webtop-net
 **What it does:** A bridge network that connects all services internally so they can communicate by container name.
+
 **Role in stack:** Enables services to find each other (Hermes → OmniRoute at `localhost:20128`, etc.) without exposing everything to the outside world.
 
 ## Boot Sequence — How Everything Starts
