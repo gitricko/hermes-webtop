@@ -276,8 +276,6 @@ Here's the full journey of a message from your keyboard to the LLM and back:
        │
        ├─ 🔀 OmniRoute falls back via "Config Free API" → external LLM Provider
        │
-       ├─ 🔀 OmniRoute proxies to Ollama GPU for accelerated inference
-       │
        └─ ❌ OmniRoute fails → Hermes Gateway falls back to ModelRelay (port :7352)
                                sends request → gets response
        │
@@ -295,7 +293,7 @@ Here's the full journey of a message from your keyboard to the LLM and back:
 1. **Browser → Code-Server (:8888) / Claude CLI terminal:** You open VS Code in your browser and type a prompt in the Hermes extension or terminal, or you run `claude` commands directly in the terminal.
 2. **Code-Server / Claude CLI → Hermes Gateway (:9119):** The extension or CLI sends your message to the Hermes Gateway API.
 3. **Hermes processes:** Hermes expands your prompt with system instructions, checks Mnemon for relevant context from past sessions, and may spawn sub-agents for parallel subtasks.
-4. **Hermes → OmniRoute API (:20128):** For the LLM call, Hermes sends a request to OmniRoute, which selects the best available model from its `auto-fastest` combo. OmniRoute may route via the "Config Free API" path to external LLM providers, or proxy to an external Ollama GPU for accelerated inference. If OmniRoute fails entirely, Hermes Gateway automatically falls back to ModelRelay Proxy (:7352).
+4. **Hermes → OmniRoute API (:20128):** For the LLM call, Hermes sends a request to OmniRoute, which selects the best available model from its `auto-fastest` combo. OmniRoute may route via the "Config Free API" path to external LLM providers, or proxy to an external Ollama GPU for accelerated inference (if configured). If OmniRoute fails entirely, Hermes Gateway automatically falls back to ModelRelay Proxy (:7352).
 5. **Memory operations:** Hermes may store new information via Mnemon, which uses Ollama (:11434) to generate embeddings for semantic indexing.
 6. **Response:** The LLM's response travels back through the same path — OmniRoute/ModelRelay → Hermes Gateway → Code-Server/CLI → your browser. Hermes also updates Mnemon with key facts from the conversation.
 
@@ -307,11 +305,9 @@ Here's the full journey of a message from your keyboard to the LLM and back:
 | 8888 | **Code-Server** | VS Code in browser with AI extensions | ✅ Yes |
 | 9119 | **Hermes Gateway + Dashboard (Frontend)** | Agent HTTP API and web UI (socat forward from :9009) | ✅ Yes |
 | 8642 | **Hermes API** | Optional dedicated API server | ✅ Yes (optional) |
-| 20128 | **OmniRoute Dashboard** | Web UI for model router management | ✅ Yes |
-| 20128 | **OmniRoute API** | Multi-provider LLM router with auto-failover | ✅ Yes |
-| 7352 | **ModelRelay Dashboard** | Web UI for free-tier proxy monitoring | ✅ Yes |
-| 7352 | **ModelRelay Proxy** | Free-tier LLM API proxy | ✅ Yes |
-| 9009 | **Hermes Dashboard (Harness)** | Web dashboard (internal — forwarded to :9119) | ❌ Internal |
+| 20128 | **OmniRoute API/Dashboard** | Web UI/API for model router management | ✅ Yes |
+| 7352 | **ModelRelay API/Dashboard** | Web UI/API for free-tier proxy monitoring | ✅ Yes |
+| 9009 | **Hermes Dashboard (Harness)** | Web dashboard (internal — forwarded to :9119) | ✅ Yes |
 | 11434 | **Ollama** | Local LLM server for embeddings | ❌ Internal |
 | N/A | **Hermes CLI** | Terminal-based agent interface | ❌ Terminal only |
 | N/A | **Claude CLI** | Terminal-based AI assistant from Anthropic | ❌ Terminal only |
