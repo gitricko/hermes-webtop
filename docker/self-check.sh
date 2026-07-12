@@ -98,25 +98,24 @@ if ! should_skip "services"; then
   PORT_POLL_TIMEOUT=60
   POLL_STARTED_AT=$(date +%s)
   declare -A RESPONDED=([3000]="" [8888]="" [7352]="" [20128]="", [9119]="")
-  echo ""
-  echo "=== Polling Service Ports (${PORT_POLL_TIMEOUT}s timeout) ==="
 
   while true; do
     NOW=$(date +%s)
     ELAPSED=$((NOW - POLL_STARTED_AT))
 
+    # Collecting responses
     if [ "$ELAPSED" -gt "$PORT_POLL_TIMEOUT" ]; then
-      echo ""
-      echo "→ FAIL: Port poll timeout after ${PORT_POLL_TIMEOUT}s — not all services responded"
       for pair in "3000:WebTop" "8888:CodeServer" "7352:ModelRelay" "20128:OmniRoute", "9119:HermesGateway"; do
         PORT="${pair%%:*}"
         NAME="${pair##*:}"
         if [ "${RESPONDED[$PORT]}" != "true" ]; then
-          echo "  • $NAME (:$PORT) — ❌ never responded"
+          echo "  $NAME (:$PORT) — ❌ never responded"
         fi
       done
+      break
     fi
 
+    # Testing ports
     for pair in "3000:WebTop" "8888:CodeServer" "7352:ModelRelay" "20128:OmniRoute" "9119:HermesGateway"; do
       PORT="${pair%%:*}"
       NAME="${pair##*:}"
@@ -144,13 +143,19 @@ if ! should_skip "services"; then
     done
 
     if [ "$ALL_RESPONDED" = "true" ]; then
-      echo ""
-      echo "→ PASS: All service ports responded within ${ELAPSED}s"
       break
     fi
 
     sleep 5
   done
+
+  if [ "$ALL_RESPONDED" = "true" ]; then
+    echo ""
+    _ok "Services Ports" "responding within ${ELAPSED}s"
+  else
+    echo ""
+    _fail "Services Ports" "failed to respond within ${PORT_POLL_TIMEOUT}s"
+  fi
 
 else
   echo "   (skipped)"

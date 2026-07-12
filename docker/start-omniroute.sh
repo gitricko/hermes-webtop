@@ -32,10 +32,20 @@ if [ "$INIT_OMNIROUTE" -eq "1" ]; then
     echo "[start-omniroute] OmniRoute is fresh. Creating auto-fastest combo..."
 
     # Wait for OmniRoute to be ready
-    while ! curl -s -o /dev/null -w "%{http_code}" http://localhost:20128/v1/models | grep -q "200"; do
-        echo "[start-omniroute] Waiting for OmniRoute to be ready..."
-        sleep 3
+    MAX_ATTEMPTS=10
+    for ((attempt=1; attempt<=MAX_ATTEMPTS; attempt++)); do
+        echo "[start-omniroute] Waiting for OmniRoute to be ready (attempt $attempt/$MAX_ATTEMPTS)..."
+        
+        if curl -s --max-time 3 -o /dev/null -w "%{http_code}" http://localhost:20128/v1/models | grep -q "200"; then
+            break
+        fi
+        if [ "$attempt" -eq "$MAX_ATTEMPTS" ]; then
+            echo "[start-omniroute] Error: OmniRoute failed to start after $MAX_ATTEMPTS attempts."
+            exit 1
+        fi
+        sleep 1
     done
+
 
     # Switch OmniRoute to not require login for now, can enable later
     echo "[start-omniroute] Switching OmniRoute to not require login..."
