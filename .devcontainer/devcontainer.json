@@ -5,5 +5,5 @@
       "extensions": ["joaompfp.hermes-ai-agent"]
     }
   },
-  "postCreateCommand": "bash ./.devcontainer/post-create.sh > /tmp/post-create.log"
+  "postCreateCommand": "bash ./.devcontainer/free-disk.sh && bash ./.devcontainer/post-create.sh > /tmp/post-create.log"
 }
