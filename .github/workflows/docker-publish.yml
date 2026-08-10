@@ -206,15 +206,14 @@ jobs:
           mkdir -p /tmp/failure-logs
 
           # Service logs (written to /tmp by start scripts)
-          docker cp $CONTAINER_NAME:/tmp/modelrelay.log   /tmp/failure-logs/ 2>/dev/null || true
-          docker cp $CONTAINER_NAME:/tmp/modelrelay.log   /tmp/failure-logs/ 2>/dev/null || true
-          docker cp $CONTAINER_NAME:/tmp/omniroute.log    /tmp/failure-logs/ 2>/dev/null || true
-          docker cp $CONTAINER_NAME:/tmp/ollama.log       /tmp/failure-logs/ 2>/dev/null || true
-          docker cp $CONTAINER_NAME:/tmp/ollama-pull.log  /tmp/failure-logs/ 2>/dev/null || true
+          docker cp "$CONTAINER_NAME:/tmp/modelrelay.log"   /tmp/failure-logs/ 
+          docker cp "$CONTAINER_NAME:/tmp/omniroute.log"    /tmp/failure-logs/ 
+          docker cp "$CONTAINER_NAME:/tmp/ollama.log"       /tmp/failure-logs/ 2>/dev/null || true
+          docker cp "$CONTAINER_NAME:/tmp/ollama-pull.log"  /tmp/failure-logs/ 2>/dev/null || true
 
           # Hermes logs
-          docker cp $CONTAINER_NAME:/home/vscode/.hermes/logs/gateway.log   /tmp/failure-logs/ 2>/dev/null || true
-          docker cp $CONTAINER_NAME:/home/vscode/.hermes/logs/dashboard.log /tmp/failure-logs/ 2>/dev/null || true
+          docker cp "$CONTAINER_NAME:/home/vscode/.hermes/logs/gateway.log"   /tmp/failure-logs/ 2>/dev/null || true
+          docker cp "$CONTAINER_NAME:/home/vscode/.hermes/logs/dashboard.log" /tmp/failure-logs/
 
           # System diagnostics
           # ps aux > /tmp/failure-logs/ps-aux.txt 2>&1 || true
