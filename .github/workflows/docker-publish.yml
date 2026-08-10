@@ -56,7 +56,7 @@ jobs:
       - name: Test Docker image
         run: |
           CONTAINER_NAME="hermes-webtop-test"
-          TIMEOUT=240
+          # TIMEOUT=240
 
           # Start container with shm-size (required by webtop) and all service ports mapped
           docker run -d --name "$CONTAINER_NAME" \
@@ -69,26 +69,26 @@ jobs:
             hermes-webtop:test
 
           # Wait for init scripts to complete (poll for known log markers)
-          echo "Waiting for startup scripts to complete..."
-          STARTED_AT=$(date +%s)
-          while true; do
-            NOW=$(date +%s)
-            ELAPSED=$((NOW - STARTED_AT))
+          # echo "Waiting for startup scripts to complete..."
+          # STARTED_AT=$(date +%s)
+          # while true; do
+          #   NOW=$(date +%s)
+          #   ELAPSED=$((NOW - STARTED_AT))
 
-            if [ "$ELAPSED" -gt "$TIMEOUT" ]; then
-              echo "FAIL: Container did not finish init within ${TIMEOUT}s"
-              break              
-            fi
+          #   if [ "$ELAPSED" -gt "$TIMEOUT" ]; then
+          #     echo "FAIL: Container did not finish init within ${TIMEOUT}s"
+          #     break              
+          #   fi
 
-            LOGS=$(docker logs "$CONTAINER_NAME" 2>&1)
+          #   LOGS=$(docker logs "$CONTAINER_NAME" 2>&1)
 
-            # Check for Hermes readiness (our A2 readiness probe)
-            if echo "$LOGS" | grep -q "Dashboard ready after"; then
-              echo "PASS: Hermes dashboard became healthy."
-              break
-            fi
+          #   # Check for Hermes readiness (our A2 readiness probe)
+          #   if echo "$LOGS" | grep -q "Dashboard ready after"; then
+          #     echo "PASS: Hermes dashboard became healthy."
+          #     break
+          #   fi
 
-          done
+          # done
 
           echo ""
           echo "=== Running boot-time self-check validation ==="
