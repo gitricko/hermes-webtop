@@ -97,7 +97,7 @@ jobs:
           # but critical errors (exit code 2) must trigger build failure.
           docker exec "$CONTAINER_NAME" self-check
           SELF_CHECK_STATUS=$?
-          docker exec "$CONTAINER_NAME" cat /tmp/health-report.json | jq -r
+          # docker exec "$CONTAINER_NAME" cat /tmp/health-report.json | jq -r
           echo "Self-check exited with status: $SELF_CHECK_STATUS"
           
           if [ "${SELF_CHECK_STATUS}" -eq 0 ]; then
