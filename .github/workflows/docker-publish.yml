@@ -131,7 +131,7 @@ jobs:
               # docker logs "$CONTAINER_NAME" --tail 100
               # docker kill "$CONTAINER_NAME" >/dev/null 2>&1 || true
               # docker rm -f "$CONTAINER_NAME" >/dev/null 2>&1 || true
-              # exit 1
+              break
             fi
 
             for pair in "3000:WebTop" "8888:CodeServer" "7352:ModelRelay" "20128:OmniRoute" "9119:HermesGateway"; do
