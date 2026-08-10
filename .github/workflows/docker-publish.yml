@@ -197,7 +197,39 @@ jobs:
           docker kill "$CONTAINER_NAME" >/dev/null 2>&1 || true
           docker rm -f "$CONTAINER_NAME" >/dev/null 2>&1 || true
           echo "PASS: Docker image smoke test passed."
-        
+
+      # ── Collect logs on failure ──────────────────────────────────────
+      - name: Collect diagnostic logs
+        if: failure()
+        run: |
+          mkdir -p /tmp/failure-logs
+
+          # Service logs (written to /tmp by start scripts)
+          docker cp $CONTAINER_NAME:/tmp/modelrelay.log   /tmp/failure-logs/ 2>/dev/null || true
+          docker cp $CONTAINER_NAME:/tmp/modelrelay.log   /tmp/failure-logs/ 2>/dev/null || true
+          docker cp $CONTAINER_NAME:/tmp/omniroute.log    /tmp/failure-logs/ 2>/dev/null || true
+          docker cp $CONTAINER_NAME:/tmp/ollama.log       /tmp/failure-logs/ 2>/dev/null || true
+          docker cp $CONTAINER_NAME:/tmp/ollama-pull.log  /tmp/failure-logs/ 2>/dev/null || true
+
+          # Hermes logs
+          docker cp $CONTAINER_NAME:/home/vscode/.hermes/logs/gateway.log   /tmp/failure-logs/ 2>/dev/null || true
+          docker cp $CONTAINER_NAME:/home/vscode/.hermes/logs/dashboard.log /tmp/failure-logs/ 2>/dev/null || true
+
+          # System diagnostics
+          # ps aux > /tmp/failure-logs/ps-aux.txt 2>&1 || true
+          # ss -tlnp > /tmp/failure-logs/ss-tlnp.txt 2>&1 || netstat -tlnp > /tmp/failure-logs/netstat-tlnp.txt 2>&1 || true
+
+          echo "=== Collected logs ==="
+          ls -la /tmp/failure-logs/
+
+      - name: Upload logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: failure-logs-${{ github.run_id }}
+          path: /tmp/failure-logs/
+          if-no-files-found: warn
+          
   push-to-ghcr:
     runs-on: ubuntu-latest
     # Run if on main branch, or if manual_push is yes from workflow_dispatch
