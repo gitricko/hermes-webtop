@@ -202,6 +202,7 @@ jobs:
       - name: Collect diagnostic logs
         if: failure()
         run: |
+          CONTAINER_NAME="hermes-webtop-test"
           mkdir -p /tmp/failure-logs
 
           # Service logs (written to /tmp by start scripts)
