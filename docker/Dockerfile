@@ -57,10 +57,9 @@ ARG HERMES_VERSION
 #     npm cache clean --force
 RUN curl -fsSL "https://raw.githubusercontent.com/NousResearch/hermes-agent/${HERMES_VERSION}/scripts/install.sh" | bash -s -- --skip-setup && \
     rm -rf /var/lib/apt/lists/*
-RUN cd /usr/local/lib/hermes-agent && npm install
-RUN cd /usr/local/lib/hermes-agent/web && npm install && npm run build
+RUN cd /usr/local/lib/hermes-agent && CI=1 npm install --no-save && CI=1 npm install --no-save --include=dev --workspace web
+RUN cd /usr/local/lib/hermes-agent/web && CI=1 npm run build 
 RUN npm cache clean --force
-
 
 # Install ModelRelay and start automatically in the background
 ARG MODELRELAY_VERSION
