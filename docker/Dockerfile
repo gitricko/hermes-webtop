@@ -50,11 +50,17 @@ RUN mv /custom-cont-init.d/self-check.sh /usr/local/bin/self-check && chmod +x /
 
 # Install Hermes
 ARG HERMES_VERSION
+# RUN curl -fsSL "https://raw.githubusercontent.com/NousResearch/hermes-agent/${HERMES_VERSION}/scripts/install.sh" | bash -s -- --skip-setup && \
+#     rm -rf /var/lib/apt/lists/* && \
+#     cd /usr/local/lib/hermes-agent && npm install && \
+#     cd /usr/local/lib/hermes-agent/web && npm install && npm run build && \
+#     npm cache clean --force
 RUN curl -fsSL "https://raw.githubusercontent.com/NousResearch/hermes-agent/${HERMES_VERSION}/scripts/install.sh" | bash -s -- --skip-setup && \
-    rm -rf /var/lib/apt/lists/* && \
-    cd /usr/local/lib/hermes-agent && npm install && \
-    cd /usr/local/lib/hermes-agent/web && npm install && npm run build && \
-    npm cache clean --force
+    rm -rf /var/lib/apt/lists/*
+RUN cd /usr/local/lib/hermes-agent && npm install
+RUN cd /usr/local/lib/hermes-agent/web && npm install && npm run build
+RUN npm cache clean --force
+
 
 # Install ModelRelay and start automatically in the background
 ARG MODELRELAY_VERSION
