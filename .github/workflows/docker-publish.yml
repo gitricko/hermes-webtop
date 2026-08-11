@@ -92,7 +92,7 @@ jobs:
             docker exec "$CONTAINER_NAME" sh -c 'cd /tmp && tar cf - *.log' | tar xf - -C /tmp/failure-logs/
 
             # Hermes logs
-            docker exec "$CONTAINER_NAME" sh -c 'cd /home/runner/.hermes/logs && tar cf - *.log' | tar xf - -C /tmp/failure-logs/
+            docker exec "$CONTAINER_NAME" sh -c 'cd $HOME/.hermes/logs && tar cf - *.log' | tar xf - -C /tmp/failure-logs/
             # docker cp "$CONTAINER_NAME:/home/vscode/.hermes/logs/*.log"   /tmp/failure-logs/ 2>/dev/null || true
 
             ls -la /tmp/failure-logs/
