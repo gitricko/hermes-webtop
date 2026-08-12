@@ -72,13 +72,13 @@ jobs:
           # We check the exit status. In headless CI, some warnings might be present,
           # but critical errors (exit code 2) must trigger build failure.
               
-          # Disable exit-on-error
+          # Disable exit-on-error and capture the exit status of the self-check script
           set +e     
           docker exec "$CONTAINER_NAME" self-check
           SELF_CHECK_STATUS=$?
-          # Re-enable exit-on-error
           set -e
-          echo "Self-check exited with status: $SELF_CHECK_STATUS"
+
+          echo "\n\nSelf-check exited with status: $SELF_CHECK_STATUS"
           
           if [ "${SELF_CHECK_STATUS}" -eq 0 ]; then
             echo "PASS: Docker image smoke test passed."
@@ -88,12 +88,10 @@ jobs:
             mkdir -p /tmp/failure-logs
   
             # Service logs (written to /tmp by start scripts)
-            # docker cp "$CONTAINER_NAME:/tmp/*.log"   /tmp/failure-logs/ 2>/dev/null || true  
             docker exec "$CONTAINER_NAME" sh -c 'cd /tmp && tar cf - *.log' | tar xf - -C /tmp/failure-logs/
 
             # Hermes logs
             docker exec "$CONTAINER_NAME" sh -c 'cd $HOME/.hermes/logs && tar cf - *.log' | tar xf - -C /tmp/failure-logs/
-            # docker cp "$CONTAINER_NAME:/home/vscode/.hermes/logs/*.log"   /tmp/failure-logs/ 2>/dev/null || true
 
             ls -la /tmp/failure-logs/
 
