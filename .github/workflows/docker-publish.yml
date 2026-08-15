@@ -192,4 +192,4 @@ jobs:
           tags: |
             ghcr.io/${{ env.LOWERCASE_REPO }}:${{ env.IMAGE_TAG }}
             ghcr.io/${{ env.LOWERCASE_REPO }}:${{ github.sha }}
-          labels: ${{ steps.meta.output.labels }}
+          labels: ${{ steps.meta.outputs.labels }}
