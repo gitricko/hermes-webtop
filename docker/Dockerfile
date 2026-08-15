@@ -53,55 +53,22 @@ ARG HERMES_VERSION
 ENV HERMES_HOME=/config/.hermes
 RUN curl -fsSL "https://raw.githubusercontent.com/NousResearch/hermes-agent/${HERMES_VERSION}/scripts/install.sh" | bash -s -- --skip-setup && \
     rm -rf /var/lib/apt/lists/* && \
-    mkdir -p ${HERMES_HOME} && \
+    mkdir -p /tmp/hermes-stamp && \
     cd /usr/local/lib/hermes-agent && \
     CI=1 npm ci --include=dev --workspace web --silent 2>&1 || \
     CI=1 npm install --no-save --include=dev --workspace web --silent 2>&1 && \
     CI=1 npm run build -w web --silent 2>&1 && \
     npm cache clean --force && \
-    echo "=== BUILD-TIME DEBUG ===" && \
-    ls -la /usr/local/lib/hermes-agent/hermes_cli/web_dist/ 2>&1 | head -20 && \
-    ls -la /config/.hermes/ 2>&1 && \
-    cat /config/.hermes/web-ui-build-stamp.json 2>&1 && \
-    cp -f /root/.hermes/web-ui-build-stamp.json ${HERMES_HOME}/web-ui-build-stamp.json 2>/dev/null || true && \
-    HERMES_HOME=${HERMES_HOME} python3 <<'PYEOF'
+    HERMES_HOME=/tmp/hermes-stamp python3 <<'PYEOF'
 import sys
 sys.path.insert(0, '/usr/local/lib/hermes-agent')
-from hermes_cli.main import _write_web_ui_build_stamp, _workspace_root, _web_ui_build_needed, _compute_web_ui_content_hash
+from hermes_cli.main import _write_web_ui_build_stamp, _workspace_root
 from pathlib import Path
 web_dir = Path('/usr/local/lib/hermes-agent/web')
 project_root = _workspace_root(web_dir)
-print(f'project_root={project_root}, web_dir={web_dir}')
-# Check .gitignore exists
-gitignore = project_root / '.gitignore'
-print(f'.gitignore exists: {gitignore.exists()}')
-# Check sentinel
-dist_dir = project_root / "hermes_cli" / "web_dist"
-sentinel = dist_dir / ".vite" / "manifest.json"
-if not sentinel.exists():
-    sentinel = dist_dir / "index.html"
-print(f'sentinel ({sentinel}) exists: {sentinel.exists()}')
-# Check stamp
-from hermes_cli.main import _web_ui_stamp_path
-stamp_path = _web_ui_stamp_path()
-print(f'stamp_path: {stamp_path}')
-print(f'stamp exists: {stamp_path.exists()}')
-if stamp_path.exists():
-    import json
-    stamp_data = json.loads(stamp_path.read_text())
-    print(f'stamp contentHash: {stamp_data.get("contentHash")}')
-    # Compute current hash
-    current_hash = _compute_web_ui_content_hash(project_root, web_dir)
-    print(f'current contentHash: {current_hash}')
-    print(f'hash match: {stamp_data.get("contentHash") == current_hash}')
-# Check build_needed
-needed = _web_ui_build_needed(web_dir)
-print(f'_web_ui_build_needed: {needed}')
 _write_web_ui_build_stamp(project_root, web_dir)
-print('Stamp written')
+print('Build-time stamp written to /tmp/hermes-stamp')
 PYEOF
-
-# Retry trigger: 2026-08-15T05:00:00Z
 
 # Install ModelRelay and start automatically in the background
 ARG MODELRELAY_VERSION

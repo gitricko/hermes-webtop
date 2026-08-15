@@ -83,8 +83,16 @@ runuser -l abc <<'EOF'
   ensure_ownership "/usr/local/lib/hermes-agent/hermes_cli"
   ensure_ownership "/usr/local/lib/hermes-agent/web"
   echo "[start-hermes] Starting Hermes Dashboard..."
-  # Start Hermes Dashboard in background and expose it on port 9119 via socat
-  nohup socat TCP4-LISTEN:9119,fork,reuseaddr TCP4:127.0.0.1:9009 > ~/.hermes/logs/socat-9119.log 2>&1 &
+  
+  # Copy build-time stamp to runtime HERMES_HOME (build writes to /tmp/hermes-stamp which persists in image)
+  if [ -f /tmp/hermes-stamp/web-ui-build-stamp.json ]; then
+    echo "[start-hermes] Copying pre-built web UI stamp to $HOME/.hermes/"
+    mkdir -p "$HOME/.hermes"
+    cp -f /tmp/hermes-stamp/web-ui-build-stamp.json "$HOME/.hermes/web-ui-build-stamp.json"
+  else
+    echo "[start-hermes] WARNING: No pre-built stamp found at /tmp/hermes-stamp/web-ui-build-stamp.json"
+  fi
+  
   # Debug: check stamp and hash before starting dashboard
   /usr/local/lib/hermes-agent/venv/bin/python3 <<'PYEOF' > ~/.hermes/logs/web_ui_debug.log 2>&1
 import sys
@@ -111,6 +119,9 @@ needed = _web_ui_build_needed(web_dir)
 print(f'[RUNTIME DEBUG] _web_ui_build_needed: {needed}')
 PYEOF
   cat ~/.hermes/logs/web_ui_debug.log
+  
+  # Start Hermes Dashboard in background and expose it on port 9119 via socat
+  nohup socat TCP4-LISTEN:9119,fork,reuseaddr TCP4:127.0.0.1:9009 > ~/.hermes/logs/socat-9119.log 2>&1 &
   nohup hermes dashboard --port 9009 --no-open > ~/.hermes/logs/dashboard.log 2>&1 &
 
   # Remind Hermes on Mnemon setup if needed
