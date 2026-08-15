@@ -84,12 +84,6 @@ runuser -l abc <<'EOF'
   ensure_ownership "/usr/local/lib/hermes-agent/web"
   echo "[start-hermes] Starting Hermes Dashboard..."
   
-  # Copy build-time stamp to runtime HERMES_HOME (build writes to /opt/hermes-prebuilt which persists in image)
-  if [ -f /opt/hermes-prebuilt/web-ui-build-stamp.json ]; then
-    mkdir -p "$HOME/.hermes"
-    cp -f /opt/hermes-prebuilt/web-ui-build-stamp.json "$HOME/.hermes/web-ui-build-stamp.json"
-  fi
-  
   # Start Hermes Dashboard in background and expose it on port 9119 via socat
   nohup socat TCP4-LISTEN:9119,fork,reuseaddr TCP4:127.0.0.1:9009 > ~/.hermes/logs/socat-9119.log 2>&1 &
   nohup hermes dashboard --port 9009 --no-open > ~/.hermes/logs/dashboard.log 2>&1 &
