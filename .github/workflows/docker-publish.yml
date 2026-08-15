@@ -166,7 +166,7 @@ jobs:
 
       - name: Set lowercase repository name
         run: |
-          echo "LOWERCASE_REPO=$(echo \"${{ github.repository }}\" | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+          echo "LOWERCASE_REPO=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
 
       - name: Set IMAGE_TAG for build-test
         run: |
