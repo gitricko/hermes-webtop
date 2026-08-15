@@ -67,23 +67,34 @@ jobs:
             -p 9119:9119 \
             hermes-webtop:test
 
+          # Wait for Hermes Dashboard to be ready (init scripts run in background)
+          echo "=== Waiting for Hermes Dashboard to become healthy ==="
+          for i in $(seq 1 30); do
+            if docker exec "$CONTAINER_NAME" curl -s -o /dev/null -w "%{http_code}" http://localhost:9119 2>/dev/null | grep -q "200\|302\|401"; then
+              echo "Dashboard ready after $((i * 5)) seconds."
+              break
+            fi
+            if [ "$i" -eq 30 ]; then
+              echo "WARNING: Dashboard did not respond within 150 seconds."
+            fi
+            sleep 5
+          done
+
           echo "=== Running boot-time self-check validation ==="
           # Execute the self-check script inside the container.
           # We check the exit status. In headless CI, some warnings might be present,
           # but critical errors (exit code 2) must trigger build failure.
-              
+             
           # Disable exit-on-error and capture the exit status of the self-check script
-          set +e     
+          set +e    
           docker exec "$CONTAINER_NAME" self-check
           SELF_CHECK_STATUS=$?
           set -e
 
           echo "\n\nSelf-check exited with status: $SELF_CHECK_STATUS"
           
-          if [ "${SELF_CHECK_STATUS}" -eq 0 ]; then
-            echo "PASS: Docker image smoke test passed."
-          else
-            # Collect logs
+          # Only fail on critical errors (exit_code=2), not warnings (exit_code=1)
+          if [ "${SELF_CHECK_STATUS}" -eq 2 ]; then
             echo "FAIL: Docker image smoke test failed; Collecting logs."
             mkdir -p /tmp/failure-logs
   
@@ -96,7 +107,13 @@ jobs:
             ls -la /tmp/failure-logs/
 
             exit 1
-          fi          
+          elif [ "${SELF_CHECK_STATUS}" -eq 1 ]; then
+            echo "PASS: Docker image smoke test passed (warnings only, no critical errors)."
+            exit 0
+          else
+            echo "PASS: Docker image smoke test passed."
+            exit 0
+          fi         
       # ── Collect logs on failure ──────────────────────────────────────
       - name: Upload logs on failure
         if: failure()
@@ -105,7 +122,7 @@ jobs:
           name: failure-logs-${{ github.run_id }}
           path: /tmp/failure-logs/
           if-no-files-found: warn
-          
+         
   push-to-ghcr:
     runs-on: ubuntu-latest
     # Run if on main branch, or if manual_push is yes from workflow_dispatch
@@ -128,7 +145,7 @@ jobs:
           haskell: true
           large-packages: true
           swap-storage: true
-      
+     
       - name: Checkout repository
         uses: actions/checkout@v7
 
@@ -149,7 +166,7 @@ jobs:
 
       - name: Set lowercase repository name
         run: |
-          echo "LOWERCASE_REPO=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+          echo "LOWERCASE_REPO=$(echo \"${{ github.repository }}\" | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
 
       - name: Set IMAGE_TAG for build-test
         run: |
@@ -175,4 +192,4 @@ jobs:
           tags: |
             ghcr.io/${{ env.LOWERCASE_REPO }}:${{ env.IMAGE_TAG }}
             ghcr.io/${{ env.LOWERCASE_REPO }}:${{ github.sha }}
-          labels: ${{ steps.meta.outputs.labels }}
+          labels: ${{ steps.meta.output.labels }}
