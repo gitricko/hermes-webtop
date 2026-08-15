@@ -55,7 +55,7 @@ RUN curl -fsSL "https://raw.githubusercontent.com/NousResearch/hermes-agent/${HE
     cd /usr/local/lib/hermes-agent && \
     CI=1 npm ci --include=dev --workspace web --silent 2>&1 || \
     CI=1 npm install --no-save --include=dev --workspace web --silent 2>&1 && \
-    cd /usr/local/lib/hermes-agent/web && CI=1 npm run build 2>&1 && \
+    CI=1 npm run build -w web 2>&1 && \
     npm cache clean --force
 
 # Install ModelRelay and start automatically in the background
