@@ -85,6 +85,31 @@ runuser -l abc <<'EOF'
   echo "[start-hermes] Starting Hermes Dashboard..."
   # Start Hermes Dashboard in background and expose it on port 9119 via socat
   nohup socat TCP4-LISTEN:9119,fork,reuseaddr TCP4:127.0.0.1:9009 > ~/.hermes/logs/socat-9119.log 2>&1 &
+  # Debug: check stamp and hash before starting dashboard
+  python3 <<'PYEOF'
+import sys
+sys.path.insert(0, '/usr/local/lib/hermes-agent')
+from hermes_cli.main import _web_ui_build_needed, _compute_web_ui_content_hash, _web_ui_stamp_path, _workspace_root
+from pathlib import Path
+web_dir = Path('/usr/local/lib/hermes-agent/web')
+project_root = _workspace_root(web_dir)
+print(f'[RUNTIME DEBUG] project_root={project_root}')
+print(f'[RUNTIME DEBUG] web_dir={web_dir}')
+sentinel = project_root / "hermes_cli" / "web_dist" / "index.html"
+print(f'[RUNTIME DEBUG] sentinel exists: {sentinel.exists()}')
+stamp_path = _web_ui_stamp_path()
+print(f'[RUNTIME DEBUG] stamp_path: {stamp_path}')
+print(f'[RUNTIME DEBUG] stamp exists: {stamp_path.exists()}')
+if stamp_path.exists():
+    import json
+    stamp_data = json.loads(stamp_path.read_text())
+    print(f'[RUNTIME DEBUG] stamp contentHash: {stamp_data.get("contentHash")}')
+    current_hash = _compute_web_ui_content_hash(project_root, web_dir)
+    print(f'[RUNTIME DEBUG] current contentHash: {current_hash}')
+    print(f'[RUNTIME DEBUG] hash match: {stamp_data.get("contentHash") == current_hash}')
+needed = _web_ui_build_needed(web_dir)
+print(f'[RUNTIME DEBUG] _web_ui_build_needed: {needed}')
+PYEOF
   nohup hermes dashboard --port 9009 --no-open > ~/.hermes/logs/dashboard.log 2>&1 &
 
   # Remind Hermes on Mnemon setup if needed
