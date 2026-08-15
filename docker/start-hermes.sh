@@ -84,13 +84,13 @@ runuser -l abc <<'EOF'
   ensure_ownership "/usr/local/lib/hermes-agent/web"
   echo "[start-hermes] Starting Hermes Dashboard..."
   
-  # Copy build-time stamp to runtime HERMES_HOME (build writes to /tmp/hermes-stamp which persists in image)
-  if [ -f /tmp/hermes-stamp/web-ui-build-stamp.json ]; then
+  # Copy build-time stamp to runtime HERMES_HOME (build writes to /opt/hermes-prebuilt which persists in image)
+  if [ -f /opt/hermes-prebuilt/web-ui-build-stamp.json ]; then
     echo "[start-hermes] Copying pre-built web UI stamp to $HOME/.hermes/"
     mkdir -p "$HOME/.hermes"
-    cp -f /tmp/hermes-stamp/web-ui-build-stamp.json "$HOME/.hermes/web-ui-build-stamp.json"
+    cp -f /opt/hermes-prebuilt/web-ui-build-stamp.json "$HOME/.hermes/web-ui-build-stamp.json"
   else
-    echo "[start-hermes] WARNING: No pre-built stamp found at /tmp/hermes-stamp/web-ui-build-stamp.json"
+    echo "[start-hermes] WARNING: No pre-built stamp found at /opt/hermes-prebuilt/web-ui-build-stamp.json"
   fi
   
   # Debug: check stamp and hash before starting dashboard

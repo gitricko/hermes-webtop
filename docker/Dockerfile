@@ -53,13 +53,13 @@ ARG HERMES_VERSION
 ENV HERMES_HOME=/config/.hermes
 RUN curl -fsSL "https://raw.githubusercontent.com/NousResearch/hermes-agent/${HERMES_VERSION}/scripts/install.sh" | bash -s -- --skip-setup && \
     rm -rf /var/lib/apt/lists/* && \
-    mkdir -p /tmp/hermes-stamp && \
+    mkdir -p /opt/hermes-prebuilt && \
     cd /usr/local/lib/hermes-agent && \
     CI=1 npm ci --include=dev --workspace web --silent 2>&1 || \
     CI=1 npm install --no-save --include=dev --workspace web --silent 2>&1 && \
     CI=1 npm run build -w web --silent 2>&1 && \
     npm cache clean --force && \
-    HERMES_HOME=/tmp/hermes-stamp python3 <<'PYEOF'
+    HERMES_HOME=/opt/hermes-prebuilt python3 <<'PYEOF'
 import sys
 sys.path.insert(0, '/usr/local/lib/hermes-agent')
 from hermes_cli.main import _write_web_ui_build_stamp, _workspace_root
@@ -67,7 +67,7 @@ from pathlib import Path
 web_dir = Path('/usr/local/lib/hermes-agent/web')
 project_root = _workspace_root(web_dir)
 _write_web_ui_build_stamp(project_root, web_dir)
-print('Build-time stamp written to /tmp/hermes-stamp')
+print('Build-time stamp written to /opt/hermes-prebuilt')
 PYEOF
 
 # Install ModelRelay and start automatically in the background
