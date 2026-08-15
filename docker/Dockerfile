@@ -68,6 +68,12 @@ from pathlib import Path
 web_dir = Path('/usr/local/lib/hermes-agent/web')
 project_root = _workspace_root(web_dir)
 print(f'project_root={project_root}, web_dir={web_dir}')
+# Check .gitignore exists
+gitignore = project_root / '.gitignore'
+print(f'.gitignore exists: {gitignore.exists()}')
+if gitignore.exists():
+    print(f'.gitignore content (first 5 lines):')
+    print('\\n'.join(gitignore.read_text().splitlines()[:5]))
 _write_web_ui_build_stamp(project_root, web_dir)
 print('Stamp written')
 PYEOF
