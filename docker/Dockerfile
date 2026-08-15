@@ -101,6 +101,8 @@ _write_web_ui_build_stamp(project_root, web_dir)
 print('Stamp written')
 PYEOF
 
+# Retry trigger: 2026-08-15T05:00:00Z
+
 # Install ModelRelay and start automatically in the background
 ARG MODELRELAY_VERSION
 # RUN npm install -g modelrelay@${MODELRELAY_VERSION} && \
