@@ -59,7 +59,18 @@ RUN curl -fsSL "https://raw.githubusercontent.com/NousResearch/hermes-agent/${HE
     CI=1 npm install --no-save --include=dev --workspace web --silent 2>&1 && \
     CI=1 npm run build -w web --silent 2>&1 && \
     npm cache clean --force && \
-    cp -f /root/.hermes/web-ui-build-stamp.json ${HERMES_HOME}/web-ui-build-stamp.json 2>/dev/null || true
+    cp -f /root/.hermes/web-ui-build-stamp.json ${HERMES_HOME}/web-ui-build-stamp.json 2>/dev/null || true && \
+    HERMES_HOME=${HERMES_HOME} python3 <<'PYEOF'
+import sys
+sys.path.insert(0, '/usr/local/lib/hermes-agent')
+from hermes_cli.main import _write_web_ui_build_stamp, _workspace_root
+from pathlib import Path
+web_dir = Path('/usr/local/lib/hermes-agent/web')
+project_root = _workspace_root(web_dir)
+print(f'project_root={project_root}, web_dir={web_dir}')
+_write_web_ui_build_stamp(project_root, web_dir)
+print('Stamp written')
+PYEOF
 
 # Install ModelRelay and start automatically in the background
 ARG MODELRELAY_VERSION
