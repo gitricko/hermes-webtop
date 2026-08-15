@@ -86,7 +86,7 @@ runuser -l abc <<'EOF'
   # Start Hermes Dashboard in background and expose it on port 9119 via socat
   nohup socat TCP4-LISTEN:9119,fork,reuseaddr TCP4:127.0.0.1:9009 > ~/.hermes/logs/socat-9119.log 2>&1 &
   # Debug: check stamp and hash before starting dashboard
-  python3 <<'PYEOF' > ~/.hermes/logs/web_ui_debug.log 2>&1
+  /usr/local/lib/hermes-agent/venv/bin/python3 <<'PYEOF' > ~/.hermes/logs/web_ui_debug.log 2>&1
 import sys
 sys.path.insert(0, '/usr/local/lib/hermes-agent')
 from hermes_cli.main import _web_ui_build_needed, _compute_web_ui_content_hash, _web_ui_stamp_path, _workspace_root
