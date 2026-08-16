@@ -60,19 +60,7 @@ jobs:
           # Start container like how it is used - DevProd Parity
           NO_LOGS=1 DOCKER_URI=hermes-webtop:test make start
 
-          # Wait for Hermes Dashboard to be ready (init scripts run in background)
-          echo "=== Waiting for Hermes Dashboard to become healthy ==="
-          for i in $(seq 1 30); do
-            if docker exec "$CONTAINER_NAME" curl -s -o /dev/null -w "%{http_code}" http://localhost:9119 2>/dev/null | grep -q "200\|302\|401"; then
-              echo "Dashboard ready after $((i * 5)) seconds."
-              break
-            fi
-            if [ "$i" -eq 30 ]; then
-              echo "WARNING: Dashboard did not respond within 150 seconds."
-            fi
-            sleep 5
-          done
-
+          # Run self-check (it has its own 120s polling loop for all ports)
           echo "=== Running boot-time self-check validation ==="
           # Execute the self-check script inside the container.
           # We check the exit status. In headless CI, some warnings might be present,
