@@ -48,6 +48,10 @@ runuser -l abc <<'EOF'
 
     echo "[start-hermes] Populate .hermes.md"
     cp /custom-cont-init.d/.hermes.md "$HOME/.hermes.md"
+
+    # Ensure config is readable by abc (hermes config set may create as root)
+    chown abc:abc "$HOME/.hermes/config.yaml" 2>/dev/null || true
+    chmod 644 "$HOME/.hermes/config.yaml" 2>/dev/null || true
   fi
 
   mkdir -p  ~/.hermes/logs
