@@ -115,7 +115,7 @@ jobs:
       - name: Functional Test
         run: |
           CONTAINER_NAME="hermes-webtop"
-          docker exec -u abc "$CONTAINER_NAME" hermes chat -q "my name is shitty-hole"
+          docker exec -u abc "$CONTAINER_NAME" hermes chat -q "my name is shitty-hole, remember in mnemon"
           docker exec -u abc "$CONTAINER_NAME" /config/.local/bin/claude --dangerously-skip-permissions -p "do you mnemon remember what is my name"  
           
 
