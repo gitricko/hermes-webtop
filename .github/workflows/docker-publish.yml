@@ -130,10 +130,11 @@ jobs:
             || { echo "FAIL: mnemon recall did not find $TEST_NAME"; exit 1; }
 
           echo "[3/3] Claude retrieves via mnemon..."
-          timeout 60 docker exec -u abc "$CONTAINER_NAME" \
+          CLAUDE_OUTPUT=$(timeout 60 docker exec -u abc "$CONTAINER_NAME" \
             /config/.local/bin/claude --dangerously-skip-permissions -p \
-            "Use mnemon recall to find my name. Reply with ONLY the name." 2>&1 \
-            | grep -q "$TEST_NAME" \
+            "Use mnemon recall to find my name. Reply with ONLY the name." 2>&1)
+          echo "Claude: $CLAUDE_OUTPUT"
+          echo "$CLAUDE_OUTPUT" | grep -q "$TEST_NAME" \
             || { echo "FAIL: Claude did not return $TEST_NAME"; exit 1; }
 
           echo "=== ALL MNEMON CHECKS PASSED ==="
