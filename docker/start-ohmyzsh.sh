@@ -3,6 +3,13 @@
 (
     runuser -l abc -c 'sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" --unattended'
 
+    # The omz install.sh does `git clone --depth=1`, which makes `omz update`
+    # fail later with "Could not read <hash>" when parents get GC'd on origin.
+    # Unshallow to a full clone so future updates work reliably.
+    if [ -d "$HOME/.oh-my-zsh/.git" ]; then
+        runuser -l abc -c 'cd "$HOME/.oh-my-zsh" && git fetch --unshallow origin 2>/dev/null || true'
+    fi
+
     ZSHRC="$HOME/.zshrc"
     TARGET_LINE='export PATH="\$HOME/.local/bin:\$PATH"'
 
