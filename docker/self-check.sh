@@ -234,11 +234,6 @@ if ! should_skip "hermes"; then
       json_add "hermes:gateway" "fail" "gateway unreachable" "{}"
     fi
   else
-    # Debug: why can't we find the config?
-    echo "  [debug] whoami=$(whoami) HOME=$HOME HERMES_CONFIG=$HERMES_CONFIG"
-    echo "  [debug] ls -la /config/.hermes/: $(ls -la /config/.hermes/ 2>&1 | head -5)"
-    echo "  [debug] test -f /config/.hermes/config.yaml: $(test -f /config/.hermes/config.yaml && echo YES || echo NO)"
-    echo "  [debug] test -f \$HERMES_CONFIG: $(test -f "$HERMES_CONFIG" && echo YES || echo NO)"
     _fail "Config" "no config at ${HERMES_CONFIG}"
     json_add "hermes:config" "fail" "hermes config file not found" "{}"
   fi
