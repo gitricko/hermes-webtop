@@ -55,17 +55,10 @@ jobs:
           
       - name: Test Docker image
         run: |
-          CONTAINER_NAME="hermes-webtop-test"
+          CONTAINER_NAME="hermes-webtop"
 
-          # Start container with shm-size (required by webtop) and all service ports mapped
-          docker run -d --name "$CONTAINER_NAME" \
-            --shm-size=1gb \
-            -p 3000:3000 \
-            -p 8888:8888 \
-            -p 7352:7352 \
-            -p 20128:20128 \
-            -p 9119:9119 \
-            hermes-webtop:test
+          # Start container like how it is used - DevProd Parity
+          NO_LOGS=1 DOCKER_URI=hermes-webtop:test make start
 
           # Wait for Hermes Dashboard to be ready (init scripts run in background)
           echo "=== Waiting for Hermes Dashboard to become healthy ==="
@@ -87,7 +80,7 @@ jobs:
              
           # Disable exit-on-error and capture the exit status of the self-check script
           set +e    
-          docker exec "$CONTAINER_NAME" self-check
+          docker exec -u abc "$CONTAINER_NAME" self-check
           SELF_CHECK_STATUS=$?
           set -e
 
@@ -97,6 +90,9 @@ jobs:
           if [ "${SELF_CHECK_STATUS}" -eq 2 ]; then
             echo "FAIL: Docker image smoke test failed; Collecting logs."
             mkdir -p /tmp/failure-logs
+
+            # Capture docker-compose startup logs without color codes
+            docker compose logs --no-color > /tmp/failure-logs/docker-compose.log
   
             # Service logs (written to /tmp by start scripts)
             docker exec "$CONTAINER_NAME" sh -c 'cd /tmp && tar cf - *.log' | tar xf - -C /tmp/failure-logs/

@@ -21,6 +21,7 @@ runuser -l abc <<'EOF'
   if [ -d "$HOME/.hermes/logs" ] && [ -z "$(ls -A "$HOME/.hermes/logs")" ]; then
     echo "[start-hermes] No logs found in $HOME/.hermes/logs, setting up default configuration for custom provider"
     echo "[start-hermes] Initializing hermes config..."
+    hermes config set terminal.cwd $HOME
     hermes config set model.default auto-fastest
     hermes config set model.provider omniroute
     hermes config set providers.omniroute.base_url http://localhost:20128/v1
@@ -86,7 +87,7 @@ runuser -l abc <<'EOF'
   
   # Start Hermes Dashboard in background and expose it on port 9119 via socat
   nohup socat TCP4-LISTEN:9119,fork,reuseaddr TCP4:127.0.0.1:9009 > ~/.hermes/logs/socat-9119.log 2>&1 &
-  nohup hermes dashboard --port 9009 --no-open > ~/.hermes/logs/dashboard.log 2>&1 &
+  nohup hermes dashboard --port 9009 --no-open --skip-build > ~/.hermes/logs/dashboard.log 2>&1 &
 
   # Remind Hermes on Mnemon setup if needed
   if [ ! -f "$HOME/.hermes/memories/USER.md" ]; then
