@@ -60,15 +60,15 @@ jobs:
           # Start container like how it is used - DevProd Parity
           NO_LOGS=1 DOCKER_URI=hermes-webtop:test make start
 
-          # Wait for init scripts to finish (config file is the signal)
-          echo "=== Waiting for init scripts to complete ==="
-          for i in $(seq 1 60); do
-            if docker exec "$CONTAINER_NAME" test -f /config/.hermes/config.yaml 2>/dev/null; then
-              echo "Init scripts completed (config.yaml found)."
+          # Wait for init scripts to finish (port 9119 responding = start-hermes.sh done)
+          echo "=== Waiting for Hermes to become healthy ==="
+          for i in $(seq 1 30); do
+            if docker exec "$CONTAINER_NAME" curl -s -o /dev/null -w "%{http_code}" http://localhost:9119 2>/dev/null | grep -q "200\|302\|401"; then
+              echo "Hermes ready after $((i * 5)) seconds."
               break
             fi
-            if [ "$i" -eq 60 ]; then
-              echo "WARNING: config.yaml not found after 300s."
+            if [ "$i" -eq 30 ]; then
+              echo "WARNING: Hermes did not respond within 150 seconds."
             fi
             sleep 5
           done

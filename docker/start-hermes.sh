@@ -13,9 +13,6 @@ shopt -s dotglob
 chown abc:abc /usr/local/lib/hermes-agent/*
 shopt -u dotglob
 
-# Ensure /config/.hermes is accessible by abc (Docker build creates it as root)
-chown -R abc:abc /config/.hermes 2>/dev/null || true
-
 runuser -l abc <<'EOF'
   source /custom-cont-init.d/common.sh || exit 1
   ensure_ownership "$HOME/.hermes"
