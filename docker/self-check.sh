@@ -234,8 +234,8 @@ if ! should_skip "hermes"; then
       json_add "hermes:gateway" "fail" "gateway unreachable" "{}"
     fi
   else
-    _fail "Config" "no config at ${HERMES_CONFIG}"
-    json_add "hermes:config" "fail" "hermes config file not found" "{}"
+    _warn "Config" "no config at ${HERMES_CONFIG} (may still be initializing)"
+    json_add "hermes:config" "warn" "hermes config file not found (runtime)" "{}"
   fi
 else
   echo "   (skipped)"
