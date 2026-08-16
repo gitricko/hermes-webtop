@@ -394,7 +394,8 @@ fi
 echo ""
 
 # ── Write JSON report ────────────────────────────────────────────────────────
-cat > "$REPORT_FILE" <<EOF
+rm -f "$REPORT_FILE" 2>/dev/null || true
+cat > "$REPORT_FILE" <<EOF || true
 {
   "timestamp": "$TIMESTAMP",
   "exit_code": $EXIT_CODE,

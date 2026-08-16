@@ -60,6 +60,19 @@ jobs:
           # Start container like how it is used - DevProd Parity
           NO_LOGS=1 DOCKER_URI=hermes-webtop:test make start
 
+          # Wait for all init scripts to finish before running self-check
+          echo "=== Waiting for init scripts to complete ==="
+          for i in $(seq 1 60); do
+            if ! docker exec "$CONTAINER_NAME" pgrep -f "start-.*\.sh" > /dev/null 2>&1; then
+              echo "Init scripts completed."
+              break
+            fi
+            if [ "$i" -eq 60 ]; then
+              echo "WARNING: Init scripts still running after 300s."
+            fi
+            sleep 5
+          done
+
           # Run self-check (it has its own 120s polling loop for all ports)
           echo "=== Running boot-time self-check validation ==="
           # Execute the self-check script inside the container.
