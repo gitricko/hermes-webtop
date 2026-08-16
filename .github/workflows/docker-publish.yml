@@ -60,15 +60,15 @@ jobs:
           # Start container like how it is used - DevProd Parity
           NO_LOGS=1 DOCKER_URI=hermes-webtop:test make start
 
-          # Wait for all init scripts to finish before running self-check
+          # Wait for init scripts to finish (config file is the signal)
           echo "=== Waiting for init scripts to complete ==="
           for i in $(seq 1 60); do
-            if ! docker exec "$CONTAINER_NAME" pgrep -f "start-.*\.sh" > /dev/null 2>&1; then
-              echo "Init scripts completed."
+            if docker exec "$CONTAINER_NAME" test -f /config/.hermes/config.yaml 2>/dev/null; then
+              echo "Init scripts completed (config.yaml found)."
               break
             fi
             if [ "$i" -eq 60 ]; then
-              echo "WARNING: Init scripts still running after 300s."
+              echo "WARNING: config.yaml not found after 300s."
             fi
             sleep 5
           done
