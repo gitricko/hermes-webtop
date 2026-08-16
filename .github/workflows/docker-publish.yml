@@ -111,6 +111,14 @@ jobs:
             echo "PASS: Docker image smoke test passed."
             exit 0
           fi         
+
+      - name: Functional Test
+        run: |
+          CONTAINER_NAME="hermes-webtop"
+          docker exec -u abc "$CONTAINER_NAME" hermes chat -q "my name is shitty-hole"
+          docker exec -u abc "$CONTAINER_NAME" claude --dangerously-skip-permissions -p "do you mnemon remember what is my name"  
+          
+
       # ── Collect logs on failure ──────────────────────────────────────
       - name: Upload logs on failure
         if: failure()
