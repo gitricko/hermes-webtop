@@ -32,7 +32,7 @@ if [ "$INIT_OMNIROUTE" -eq "1" ]; then
     echo "[start-omniroute] OmniRoute is fresh. Creating auto-fastest combo..."
 
     # Wait for OmniRoute to be ready
-    MAX_ATTEMPTS=10
+    MAX_ATTEMPTS=120
     for ((attempt=1; attempt<=MAX_ATTEMPTS; attempt++)); do
         echo "[start-omniroute] Waiting for OmniRoute to be ready (attempt $attempt/$MAX_ATTEMPTS)..."
         
