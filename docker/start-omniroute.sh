@@ -85,7 +85,7 @@ if [ "$INIT_OMNIROUTE" -eq "1" ]; then
     curl -s -X PUT "http://localhost:20128/api/combos/$COMBO_ID" \
     -H "Content-Type: application/json" \
     -d '{
-        "models": ["oc/deepseek-v4-flash-free","mimocode/mimo-auto","oc/big-pickle"],
+        "models": ["oc/deepseek-v4-flash-free","oc/big-pickle","opencode-zen/deepseek-v4-flash-free","opencode-zen/hy3-free","opencode-zen/mimo-v2.5-free","opencode-zen/north-mini-code-free","opencode-zen/nemotron-3-ultra-free","opencode-zen/big-pickle"],
         "strategy": "auto",
         "config": {
         "maxRetries": 2,

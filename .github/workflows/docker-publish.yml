@@ -55,31 +55,25 @@ jobs:
           
       - name: Test Docker image
         run: |
-          CONTAINER_NAME="hermes-webtop-test"
+          CONTAINER_NAME="hermes-webtop"
 
-          # Start container with shm-size (required by webtop) and all service ports mapped
-          docker run -d --name "$CONTAINER_NAME" \
-            --shm-size=1gb \
-            -p 3000:3000 \
-            -p 8888:8888 \
-            -p 7352:7352 \
-            -p 20128:20128 \
-            -p 9119:9119 \
-            hermes-webtop:test
+          # Start container like how it is used - DevProd Parity
+          NO_LOGS=1 DOCKER_URI=hermes-webtop:test make start
 
-          # Wait for Hermes Dashboard to be ready (init scripts run in background)
-          echo "=== Waiting for Hermes Dashboard to become healthy ==="
+          # Wait for init scripts to finish (port 9119 responding = start-hermes.sh done)
+          echo "=== Waiting for Hermes to become healthy ==="
           for i in $(seq 1 30); do
             if docker exec "$CONTAINER_NAME" curl -s -o /dev/null -w "%{http_code}" http://localhost:9119 2>/dev/null | grep -q "200\|302\|401"; then
-              echo "Dashboard ready after $((i * 5)) seconds."
+              echo "Hermes ready after $((i * 5)) seconds."
               break
             fi
             if [ "$i" -eq 30 ]; then
-              echo "WARNING: Dashboard did not respond within 150 seconds."
+              echo "WARNING: Hermes did not respond within 150 seconds."
             fi
             sleep 5
           done
 
+          # Run self-check (it has its own 120s polling loop for all ports)
           echo "=== Running boot-time self-check validation ==="
           # Execute the self-check script inside the container.
           # We check the exit status. In headless CI, some warnings might be present,
@@ -87,7 +81,7 @@ jobs:
              
           # Disable exit-on-error and capture the exit status of the self-check script
           set +e    
-          docker exec "$CONTAINER_NAME" self-check
+          docker exec -u abc "$CONTAINER_NAME" self-check
           SELF_CHECK_STATUS=$?
           set -e
 
@@ -97,6 +91,9 @@ jobs:
           if [ "${SELF_CHECK_STATUS}" -eq 2 ]; then
             echo "FAIL: Docker image smoke test failed; Collecting logs."
             mkdir -p /tmp/failure-logs
+
+            # Capture docker-compose startup logs without color codes
+            docker compose logs --no-color > /tmp/failure-logs/docker-compose.log
   
             # Service logs (written to /tmp by start scripts)
             docker exec "$CONTAINER_NAME" sh -c 'cd /tmp && tar cf - *.log' | tar xf - -C /tmp/failure-logs/

@@ -27,7 +27,9 @@ start:
 	PUID=$(shell id -u) \
 	PGID=$(shell id -g) \
 	docker compose up -d
-	docker compose logs -f
+	if [ -z "$$NO_LOGS" ]; then \
+		docker compose logs -f; \
+	fi
 
 stop:
 	docker compose down
