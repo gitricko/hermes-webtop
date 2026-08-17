@@ -4,8 +4,9 @@ ARG MODELRELAY_VERSION=1.18.0
 ARG OLLAMA_VERSION=0.32.6
 ARG NODE_VERSION=26.7.0
 ARG CODE_SERVER_VERSION=4.131.0
-ARG MNEMON_VERSION=0.2.3
 ARG PI_VERSION=0.84.2
+ARG MNEMON_VERSION=0.2.3
+ARG HERDR_VERSION=0.7.4
 ARG TARGETARCH
 
 # Use the official Ollama image to get the binary
@@ -29,7 +30,7 @@ RUN GH_ARCH="${GH_ARCH:-${TARGETARCH:-amd64}}"; \
     && echo "deb [arch=${GH_ARCH} signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" > /etc/apt/sources.list.d/github-cli.list 
 
 # Install help utilities and clean up apt cache to reduce image size
-RUN apt-get update && apt-get install -y htop zsh ripgrep gh remmina iputils-ping net-tools socat && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y htop zsh ripgrep gh remmina iputils-ping net-tools socat tmux jq && rm -rf /var/lib/apt/lists/*
 
 # Copy Node.js binaries and libraries
 COPY --from=node-bin --chown=abc:abc /usr/local/bin/node /usr/local/bin/
@@ -108,5 +109,18 @@ RUN set -eux; \
     cp /tmp/mnemon /usr/local/bin/mnemon && \
     chmod +x /usr/local/bin/mnemon && \
     rm -rf /tmp/mnemon.tar.gz /tmp/mnemon
+
+# Install firstmate's pinned herdr session backend (primary fm-spawn pane backend).
+# Uses firstmate's own pinned installer (exact release asset, SHA-256, bounded download);
+# jq (herdr JSON protocol) and tmux (fallback session backend) come from the apt step above.
+# HERDR_VERSION is a bump guard: it must match the pin inside scripts/fm-install-herdr.sh
+# (build context is ./docker, so the COPY source is relative to that directory).
+ARG HERDR_VERSION
+COPY scripts/fm-install-herdr.sh /tmp/fm-install-herdr.sh
+RUN set -eux; \
+    chmod +x /tmp/fm-install-herdr.sh; \
+    /tmp/fm-install-herdr.sh /usr/local/bin; \
+    test "$(/usr/local/bin/herdr --version | awk '{print $2; exit}')" = "${HERDR_VERSION}"; \
+    rm -f /tmp/fm-install-herdr.sh
 
 EXPOSE 8888 3000
