@@ -30,6 +30,7 @@ Just open this repo in a GitHub Codespace, start the container and you will get:
 - CodeServer at port 8888 with Hermes + Claude Code (cli + vscode extension) installed and preconfigured
 - Ollama server pre-installed and auto-started
 - ModelRelay pre-installed, auto-started and pre-configured as default model for Hermes and Claude Code
+- **Pi coding agent** pre-installed, configured to proxy through OmniRoute (`auto-fastest`) — desktop launcher + default model
 - Hermes gateway accessible via desktop launcher
 - [Mnemon](https://github.com/mnemon-dev/mnemon) as your Hermes default [memory provider](https://github.com/gitricko/hermes-plugin-mnemon)
 - Persistent volume for your config and settings
@@ -96,6 +97,7 @@ Perfect for:
 - **One-command everything** — powerful Makefile + clean `docker-compose.yml`
 - **Auto-start ModelRelay** — Default configuration for Free LLM API to Hermes
 - **Auto-start OmniRoute** — You need some configuration before it work but it is flexible and powerful
+- **Pi coding agent** — pre-installed CLI; default model set to `omniroute` (`auto-fastest`). Launch it from the **Pi Agent** desktop icon or run `pi` / `pi -p "prompt"` in a terminal. Config lives in `~/.pi/agent/` (seeded once, then user-editable).
 - **Auto-start Ollama** — custom init script on WebTop boot
 - **Colima / local Docker support** ready
 - **Built-in code-server IDE** — browser-based VS Code on port `8888`

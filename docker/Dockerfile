@@ -5,6 +5,7 @@ ARG OLLAMA_VERSION=0.32.6
 ARG NODE_VERSION=26.7.0
 ARG CODE_SERVER_VERSION=4.131.0
 ARG MNEMON_VERSION=0.2.3
+ARG PI_VERSION=0.84.2
 ARG TARGETARCH
 
 # Use the official Ollama image to get the binary
@@ -70,6 +71,11 @@ ARG OMNIROUTE_VERSION
 RUN npm install -g omniroute@${OMNIROUTE_VERSION} && \
     npm cache clean --force && \
     mkdir -p /usr/local/lib/node_modules/omniroute/app/logs/application
+
+# Install Pi coding agent (self-extensible coding-agent CLI, proxies through OmniRoute)
+ARG PI_VERSION
+RUN npm install -g --ignore-scripts @earendil-works/pi-coding-agent@${PI_VERSION} && \
+    npm cache clean --force
 
 # Install code-server and start automatically when desktop loads
 ARG CODE_SERVER_VERSION
