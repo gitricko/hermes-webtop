@@ -40,6 +40,8 @@ runuser -l abc <<'EOF'
     # optimize for kanban
     hermes config set agent.max_turns 120
     hermes config set kanban.failure_limit 3
+    # default: a message typed while a turn is running steers into the run, not interrupt it
+    hermes config set display.busy_input_mode steer
 
     # Populate default skill and .hermes.md
     echo "[start-hermes] Installing Skill: memory-automation.md"
