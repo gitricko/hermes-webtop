@@ -147,6 +147,14 @@ GitHub Codespaces forwards ports **privately by default** (this is the setting t
 
 **For production use** we still recommend moving the same Docker image to your own VPS or server with additional hardening (firewall, HTTPS reverse proxy, strong secrets, etc.). This Codespace version is perfect for safe testing and development.
 
+## 🆙 Upgrade to new version
+If the repo is updated and you want to update your image to the latest version. You can use 
+
+```bash
+git pull              # pulls latest version
+make update-image     # installs the latest webtop version in your container. after reboot, all history is kept
+```
+
 ## 💾 Backup & Restore
 
 Your configuration and settings are persisted in a Docker volume.
