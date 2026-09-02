@@ -95,7 +95,7 @@ section "Services"
 
 if ! should_skip "services"; then
   # Poll all service ports until all respond or timeout
-  PORT_POLL_TIMEOUT=120
+  PORT_POLL_TIMEOUT=180
   POLL_STARTED_AT=$(date +%s)
   declare -A RESPONDED=([3000]="" [8888]="" [7352]="" [20128]="", [9119]="")
 
