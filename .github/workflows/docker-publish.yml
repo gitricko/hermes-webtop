@@ -130,13 +130,20 @@ jobs:
             mnemon recall "$TEST_NAME" --limit 5 2>&1 | grep -q "$TEST_NAME" \
             || { echo "FAIL: mnemon recall did not find $TEST_NAME"; exit 1; }
 
-          echo "[3/3] Claude retrieves via mnemon..."
+          # echo "[3/3] Claude retrieves via mnemon..."
+          # CLAUDE_OUTPUT=$(timeout 60 docker exec -u abc "$CONTAINER_NAME" \
+          #   /config/.local/bin/claude --dangerously-skip-permissions -p \
+          #   "Use mnemon recall to find my name. Reply with ONLY the name." 2>&1) || true
+          # echo "Claude: $CLAUDE_OUTPUT"
+          # echo "$CLAUDE_OUTPUT" | grep -q "$TEST_NAME" \
+          #   || { echo "FAIL: Claude did not return $TEST_NAME"; }
+          echo "[3/3] Hermes retrieves via mnemon..."
           CLAUDE_OUTPUT=$(timeout 60 docker exec -u abc "$CONTAINER_NAME" \
-            /config/.local/bin/claude --dangerously-skip-permissions -p \
+            hermes chat -q \
             "Use mnemon recall to find my name. Reply with ONLY the name." 2>&1) || true
-          echo "Claude: $CLAUDE_OUTPUT"
+          echo "Hermes: $CLAUDE_OUTPUT"
           echo "$CLAUDE_OUTPUT" | grep -q "$TEST_NAME" \
-            || { echo "FAIL: Claude did not return $TEST_NAME"; }
+            || { echo "FAIL: Hermes did not return $TEST_NAME"; }  
 
           echo "=== ALL MNEMON CHECKS PASSED ==="
 
