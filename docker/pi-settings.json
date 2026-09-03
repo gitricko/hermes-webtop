@@ -1,4 +1,7 @@
 {
   "defaultProvider": "omniroute",
-  "defaultModel": "auto-fastest"
+  "defaultModel": "auto-fastest",
+  "packages": [
+    "git:github.com/gitricko/pi-failover@hermes-impl"
+  ]
 }
