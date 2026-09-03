@@ -3,14 +3,62 @@
     "omniroute": {
       "baseUrl": "http://localhost:20128/v1",
       "api": "openai-completions",
-      "apiKey": "***",
-      "compat": {
-        "supportsDeveloperRole": false,
-        "supportsReasoningEffort": false
-      },
+      "apiKey": "no-key-needed",
       "models": [
-        { "id": "auto-fastest" }
-      ]
+        {
+          "id": "auto-fastest",
+          "name": "Auto Fastest",
+          "api": "openai-completions",
+          "provider": "omniroute",
+          "baseUrl": "http://localhost:20128/v1",
+          "reasoning": true,
+          "input": ["text"],
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0
+          },
+          "contextWindow": 256000,
+          "maxTokens": 131072
+        }
+      ],
+      "fallback": {
+        "chain": ["modelrelay/auto-fastest"],
+        "timeoutMs": 30000,
+        "onlyPreFirstToken": true,
+        "notifyOnSwitch": true
+      }
+    },
+    "modelrelay": {
+      "baseUrl": "http://localhost:7352/v1",
+      "api": "openai-completions",
+      "apiKey": "no-key-needed",
+      "models": [
+        {
+          "id": "auto-fastest",
+          "name": "Auto Fastest",
+          "api": "openai-completions",
+          "provider": "modelrelay",
+          "baseUrl": "http://localhost:7352/v1",
+          "reasoning": true,
+          "input": ["text"],
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0
+          },
+          "contextWindow": 256000,
+          "maxTokens": 131072
+        }
+      ],
+      "fallback": {
+        "chain": ["omniroute/auto-fastest"],
+        "timeoutMs": 30000,
+        "onlyPreFirstToken": true,
+        "notifyOnSwitch": true
+      }
     }
   }
 }

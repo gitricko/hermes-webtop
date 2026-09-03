@@ -27,5 +27,9 @@ if [ ! -f "$PI_DIR/settings.json" ]; then
   chown abc:abc "$PI_DIR/settings.json"
 fi
 
+# Install Pi-agent hermes like fallback extension
+echo "[$SCRIPT_NAME] Installing Pi-agent extension..."
+pi install git:github.com/gitricko/pi-failover@hermes-impl
+
 echo "[start-pi] Pi agent ready ($(pi --version 2>/dev/null || echo unknown)). Default model: omniroute/auto-fastest"
 EOF
