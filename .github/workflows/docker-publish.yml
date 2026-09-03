@@ -115,13 +115,14 @@ jobs:
       - name: Mnemon Integration Test
         run: |
           set -euo pipefail
+          sleep 120
           CONTAINER_NAME="hermes-webtop"
           TEST_NAME="ci-mnemon-$(date +%s)-$$"
           echo "=== Mnemon Integration Test: $TEST_NAME ==="
 
           echo "[1/3] Hermes remembers via mnemon_remember..."
           timeout 60 docker exec -u abc "$CONTAINER_NAME" \
-            hermes chat --new -q "my name is $TEST_NAME, remember this in mnemon" \
+            hermes chat -q "my name is $TEST_NAME, remember this in mnemon" \
             || { echo "FAIL: Hermes failed"; exit 1; }
 
           echo "[2/3] mnemon recall via CLI..."
