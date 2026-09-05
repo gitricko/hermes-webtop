@@ -58,7 +58,8 @@ if [ "$INIT_OMNIROUTE" -eq "1" ]; then
     "
 
     # Create auto-fastest combo (.50 change cli that needs --models)
-    while ! omniroute combo create auto-fastest --strategy auto --models '["oc/deepseek-v4-flash-free","oc/big-pickle","opencode-zen/deepseek-v4-flash-free","opencode-zen/hy3-free","opencode-zen/mimo-v2.5-free","opencode-zen/north-mini-code-free","opencode-zen/nemotron-3-ultra-free","opencode-zen/big-pickle"]' ; do        echo "[start-omniroute] omniroute still not ready yet, retrying..."
+    while ! omniroute combo create auto-fastest --strategy auto --models '["oc/deepseek-v4-flash-free","oc/big-pickle","opencode-zen/deepseek-v4-flash-free","opencode-zen/hy3-free","opencode-zen/mimo-v2.5-free","opencode-zen/north-mini-code-free","opencode-zen/nemotron-3-ultra-free","opencode-zen/big-pickle"]' ; do
+        echo "[start-omniroute] omniroute still not ready yet, retrying..."
         sleep 3
     done
     echo "[start-omniroute] OmniRoute Combo auto-fastest created!"
