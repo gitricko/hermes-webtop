@@ -1,8 +1,5 @@
 name: Build and Push Docker Image
-
-permissions:
-  contents: read
-
+  
 on:
   push:
     branches: [ main ]
@@ -28,6 +25,14 @@ on:
         options:
           - 'no'
           - 'yes'
+
+permissions:
+  contents: read
+
+# Cancel in-progress runs for the same branch/PR
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
 
