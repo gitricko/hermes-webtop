@@ -60,7 +60,7 @@ Perfect for:
 
 3. In the Codespace terminal run:
    ```bash
-   make start
+   make start-codespace
    ```
    <img width="900" alt="launch-codespace" src="./docs/make-start.gif">
 
@@ -123,7 +123,7 @@ This image includes `code-server` and exposes it on port `8888`.
 
 **The WebTop URI is automatically protected — no one else can reach it.**
 
-GitHub Codespaces forwards ports **privately by default** (this is the setting the `make start` command uses). According to official [GitHub documentation](https://docs.github.com/en/enterprise-cloud@latest/codespaces/reference/security-in-github-codespaces):
+GitHub Codespaces forwards ports **privately by default** (this is the setting the `make start-codespace` command uses). According to official [GitHub documentation](https://docs.github.com/en/enterprise-cloud@latest/codespaces/reference/security-in-github-codespaces):
 
 > "All forwarded ports are private by default, which means that you will need to authenticate before you can access the port."
 > "Privately forwarded ports: Are accessible on the internet, but **only the codespace creator can access them, after authenticating to GitHub**."
