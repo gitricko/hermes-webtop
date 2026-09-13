@@ -31,6 +31,20 @@ start:
 		docker compose logs -f; \
 	fi
 
+start-codespace:
+	PUID=$(shell id -u) \
+	PGID=$(shell id -g) \
+	docker compose \
+		-f docker-compose.yml \
+		-f docker-compose.local.yml \
+		up -d
+	if [ -z "$$NO_LOGS" ]; then \
+        docker compose \
+            -f docker-compose.yml \
+            -f docker-compose.local.yml \
+            logs -f; \
+	fi
+
 stop:
 	docker compose down
 
