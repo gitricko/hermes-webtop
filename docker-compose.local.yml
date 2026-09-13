@@ -1,0 +1,4 @@
+services:
+  hermes-webtop:
+    network_mode: bridge
+    networks: !reset []
