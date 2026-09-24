@@ -26,9 +26,9 @@ runuser -l abc <<'EOF'
     hermes config set model.provider omniroute
     hermes config set providers.omniroute.base_url http://localhost:20128/v1
     hermes config set providers.omniroute.api_key no-key-needed
-    hermes config set providers.modelrelay.base_url http://localhost:7352/v1
-    hermes config set providers.modelrelay.api_key no-key-needed
-    hermes config set fallback_providers.provider modelrelay
+    hermes config set providers.9router.base_url http://localhost:7352/v1
+    hermes config set providers.9router.api_key no-key-needed
+    hermes config set fallback_providers.provider 9router
     hermes config set fallback_providers.model auto-fastest
   
     # Turn off approval alert and live dangerously since u are in a self-contained container.

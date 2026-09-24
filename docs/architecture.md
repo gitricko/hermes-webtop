@@ -18,7 +18,7 @@ flowchart TB
         HermesDashFE[Hermes Dashboard<br/>Web UI<br/>:9119]
         WebTop[WebTop GUI<br/>KasmVNC Desktop<br/>:3000]
         OmniRouteDash[OmniRoute Dashboard<br/>Web UI · Model Router<br/>:20128]
-        ModelRelayDash[ModelRelay Dashboard<br/>Web UI · Free Proxy<br/>:7352]
+        9RouterDash[9Router Dashboard<br/>Web UI · Free Proxy<br/>:7352]
     end
 
     subgraph Harness["🪢 Harness Layer — Agents & Memory"]
@@ -31,7 +31,7 @@ flowchart TB
 
     subgraph AI["🧠 AI / Model Layer — LLM Backends"]
         OmniRouteAPI[OmniRoute API<br/>LLM Router · Auto-Failover<br/>:20128]
-        ModelRelayProxy[ModelRelay Proxy<br/>Free-Tier LLM Proxy<br/>:7352]
+        9RouterProxy[9Router Proxy<br/>Free-Tier LLM Proxy<br/>:7352]
         Ollama[Ollama<br/>Local LLM · Embeddings<br/>:11434]
     end
 
@@ -57,7 +57,7 @@ flowchart TB
 
     %% Gateway → AI Layer (primary)
     HermesGateway -- "LLM Request :20128" --> OmniRouteAPI
-    HermesGateway -.->|"Fallback :7352"| ModelRelayProxy
+    HermesGateway -.->|"Fallback :7352"| 9RouterProxy
 
     %% Memory path
     HermesGateway -- "mnemon CLI" --> Mnemon
@@ -65,11 +65,11 @@ flowchart TB
 
     %% Dashboard → API internal arrows
     OmniRouteDash -.->|"Dashboard ↔ API"| OmniRouteAPI
-    ModelRelayDash -.->|"Dashboard ↔ Proxy"| ModelRelayProxy
+    9RouterDash -.->|"Dashboard ↔ Proxy"| 9RouterProxy
 
     %% AI → External
     OmniRouteAPI -- "Config Free API" --> LLMProvider
-    ModelRelayProxy -.-> LLMProvider
+    9RouterProxy -.-> LLMProvider
     %% GPU offloading
     OmniRouteAPI -.->|"use as proxy to local GPU"| OllamaGPU
 
@@ -88,9 +88,9 @@ flowchart TB
     classDef external fill:#f3e5f5,stroke:#ab47bc,color:#4a148c
     classDef externalgpu fill:#fce4ec,stroke:#e91e63,color:#880e4f
 
-    class CodeServer,HermesDashFE,WebTop,OmniRouteDash,ModelRelayDash frontend
+    class CodeServer,HermesDashFE,WebTop,OmniRouteDash,9RouterDash frontend
     class HermesGateway,HermesDash,HermesCLI,ClaudeCLI,Mnemon harness
-    class OmniRouteAPI,ModelRelayProxy,Ollama ai
+    class OmniRouteAPI,9RouterProxy,Ollama ai
     class Tailscale,DockerVol,DockerNet,SelfCheck infra
     class Browser,LLMProvider external
     class OllamaGPU externalgpu
@@ -133,9 +133,9 @@ flowchart TB
 ### ⚡ Hermes Agent — (Gateway/CLI/VSCode Extension)
 **What it does:** The AI coding agent that processes your prompts, calls LLMs, and orchestrates complex multi-step tasks with sub-agents and tools.
 
-**How it starts:** `/docker/start-hermes.sh` installs Hermes, configures providers (OmniRoute as default, ModelRelay as fallback), enables mnemon memory, then launches the Gateway in background.
+**How it starts:** `/docker/start-hermes.sh` installs Hermes, configures providers (OmniRoute as default, 9Router as fallback), enables mnemon memory, then launches the Gateway in background.
 
-**Role in stack:** The brain of the system — it receives your messages, delegates sub-agents, calls LLMs through OmniRoute/ModelRelay, stores memories via Mnemon, and returns responses. On first boot it auto-configures: model=auto-fastest, approvals off, max_turns=120, kanban failure_limit=3, mnemon as memory provider. Every boot ensures python-telegram-bot is installed and clones/updates hermes-plugin-mnemon.
+**Role in stack:** The brain of the system — it receives your messages, delegates sub-agents, calls LLMs through OmniRoute/9Router, stores memories via Mnemon, and returns responses. On first boot it auto-configures: model=auto-fastest, approvals off, max_turns=120, kanban failure_limit=3, mnemon as memory provider. Every boot ensures python-telegram-bot is installed and clones/updates hermes-plugin-mnemon.
 
 ### 🔧 Hermes CLI
 **What it does:** The command-line interface to Hermes, accessible from any terminal inside the container (VS Code terminal, WebTop terminal).
@@ -176,23 +176,23 @@ flowchart TB
 
 **Role in stack:** The default LLM provider for Hermes. Routes requests to available models, handles failures, and provides MCP integration.
 
-### 📊 ModelRelay Dashboard — Port :7352 (Frontend/Web UI)
+### 📊 9Router Dashboard — Port :7352 (Frontend/Web UI)
 **What it does:** Similar to Omniroute, enable free models out of box withoutn configuration.
 
-**Port:** `:7352` — served alongside the ModelRelay proxy on the same port.
+**Port:** `:7352` — served alongside the 9Router proxy on the same port.
 
-**How it starts:** Started automatically by `/docker/start-modelrelay.sh` at boot alongside the proxy.
+**How it starts:** Started automatically by `/docker/start-ninerouter.sh` at boot alongside the proxy.
 
 **Role in stack:** Provides visibility into free-tier proxy operations — useful for monitoring fallback requests and troubleshooting connectivity.
 
-### 🔄 ModelRelay Proxy — Port :7352 (AI Layer)
+### 🔄 9Router Proxy — Port :7352 (AI Layer)
 **What it does:** A free-tier LLM API proxy that acts as a fallback when OmniRoute cannot fulfill a request.
 
-**Port:** `:7352` — started by `/docker/start-modelrelay.sh` at boot.
+**Port:** `:7352` — started by `/docker/start-ninerouter.sh` at boot.
 
-**How it starts:** Installed from the custom fork github:gitricko/modelrelay (not the public npm package), launched in an auto-restart loop. Pre-configured as the fallback provider in Hermes config.
+**How it starts:** Installed from the custom fork decolua/9router (not the public npm package), launched in an auto-restart loop. Pre-configured as the fallback provider in Hermes config.
 
-**Role in stack:** Safety net — if OmniRoute goes down or can't find a model, ModelRelay handles the request with its free-tier models.
+**Role in stack:** Safety net — if OmniRoute goes down or can't find a model, 9Router handles the request with its free-tier models.
 
 ### 🤖 Ollama — Port 11434 (internal only)
 **What it does:** A local LLM server that runs `nomic-embed-text` for generating text embeddings used by Mnemon.
@@ -206,7 +206,7 @@ flowchart TB
 ### ⚡ Ollama GPU — External / Hosted GPU
 **What it does:** A remote Ollama instance running on a machine with a GPU, providing faster inference for local LLM tasks.
 
-**Port:** Uses OmniRoute/ModelRelay as proxy — no direct port.
+**Port:** Uses OmniRoute/9Router as proxy — no direct port.
 
 **How it connects:** Configured as a model provider in OmniRoute via the 'Config Free API' path. When the local CPU-based Ollama (:11434) is too slow, this external GPU-powered instance handles the heavy lifting.
 
@@ -221,7 +221,7 @@ flowchart TB
 
 ### 🩺 Self-Check — Diagnostics Tool at /usr/local/bin/self-check
 
-**What it does:** A boot-time health diagnostic that polls all 5 service ports (WebTop :3000, CodeServer :8888, ModelRelay :7352, OmniRoute :20128, Hermes Gateway :9119), checks OmniRoute model availability, Mnemon binary + database, Hermes config validity, disk usage, memory pressure, and cron job status. Optionally delivers a Telegram health report.
+**What it does:** A boot-time health diagnostic that polls all 5 service ports (WebTop :3000, CodeServer :8888, 9Router :7352, OmniRoute :20128, Hermes Gateway :9119), checks OmniRoute model availability, Mnemon binary + database, Hermes config validity, disk usage, memory pressure, and cron job status. Optionally delivers a Telegram health report.
 
 **How it starts:** Runs automatically at the end of start-hermes.sh after all services are ready. Can be re-run manually anytime: `/usr/local/bin/self-check`.
 
@@ -245,7 +245,7 @@ The container base image (LinuxServer.io WebTop) automatically runs every .sh sc
 2. start-ohmyzsh.sh — Shell customization
 3. start-ollama.sh — Ollama local LLM (embeddings daemon)
 4. start-omniroute.sh — OmniRoute LLM router
-5. start-modelrelay.sh — ModelRelay free-tier proxy
+5. start-ninerouter.sh — 9Router free-tier proxy
 6. start-codeserver.sh — VS Code in browser + extensions
 7. start-hermes.sh — Hermes Agent, Gateway, Dashboard, Mnemon plugin, self-check, Telegram deps
 8. start-tailscale.sh — Tailscale VPN (must log in manually)
@@ -276,7 +276,7 @@ Here's the full journey of a message from your keyboard to the LLM and back:
        │
        ├─ 🔀 OmniRoute falls back via "Config Free API" → external LLM Provider
        │
-       └─ ❌ OmniRoute fails → Hermes Gateway falls back to ModelRelay (port :7352)
+       └─ ❌ OmniRoute fails → Hermes Gateway falls back to 9Router (port :7352)
                                sends request → gets response
        │
        ▼
@@ -285,7 +285,7 @@ Here's the full journey of a message from your keyboard to the LLM and back:
        │  (memory storage — saves new facts to Mnemon)
        ▼
 6. 🔄 Response flows back through the chain:
-       LLM → OmniRoute/ModelRelay → Hermes Gateway → Code-Server/CLI → Browser
+       LLM → OmniRoute/9Router → Hermes Gateway → Code-Server/CLI → Browser
 ```
 
 **In more detail:**
@@ -293,9 +293,9 @@ Here's the full journey of a message from your keyboard to the LLM and back:
 1. **Browser → Code-Server (:8888) / Claude CLI terminal:** You open VS Code in your browser and type a prompt in the Hermes extension or terminal, or you run `claude` commands directly in the terminal.
 2. **Code-Server / Claude CLI → Hermes Gateway (:9119):** The extension or CLI sends your message to the Hermes Gateway API.
 3. **Hermes processes:** Hermes expands your prompt with system instructions, checks Mnemon for relevant context from past sessions, and may spawn sub-agents for parallel subtasks.
-4. **Hermes → OmniRoute API (:20128):** For the LLM call, Hermes sends a request to OmniRoute, which selects the best available model from its `auto-fastest` combo. OmniRoute may route via the "Config Free API" path to external LLM providers, or proxy to an external Ollama GPU for accelerated inference (if configured). If OmniRoute fails entirely, Hermes Gateway automatically falls back to ModelRelay Proxy (:7352).
+4. **Hermes → OmniRoute API (:20128):** For the LLM call, Hermes sends a request to OmniRoute, which selects the best available model from its `auto-fastest` combo. OmniRoute may route via the "Config Free API" path to external LLM providers, or proxy to an external Ollama GPU for accelerated inference (if configured). If OmniRoute fails entirely, Hermes Gateway automatically falls back to 9Router Proxy (:7352).
 5. **Memory operations:** Hermes may store new information via Mnemon, which uses Ollama (:11434) to generate embeddings for semantic indexing.
-6. **Response:** The LLM's response travels back through the same path — OmniRoute/ModelRelay → Hermes Gateway → Code-Server/CLI → your browser. Hermes also updates Mnemon with key facts from the conversation.
+6. **Response:** The LLM's response travels back through the same path — OmniRoute/9Router → Hermes Gateway → Code-Server/CLI → your browser. Hermes also updates Mnemon with key facts from the conversation.
 
 ## Port Map
 
@@ -306,7 +306,7 @@ Here's the full journey of a message from your keyboard to the LLM and back:
 | 9119 | **Hermes Gateway + Dashboard (Frontend)** | Agent HTTP API and web UI (socat forward from :9009) | ✅ Yes |
 | 8642 | **Hermes API** | Optional dedicated API server | ✅ Yes (optional) |
 | 20128 | **OmniRoute API/Dashboard** | Web UI/API for model router management | ✅ Yes |
-| 7352 | **ModelRelay API/Dashboard** | Web UI/API for free-tier proxy monitoring | ✅ Yes |
+| 7352 | **9Router API/Dashboard** | Web UI/API for free-tier proxy monitoring | ✅ Yes |
 | 9009 | **Hermes Dashboard (Harness)** | Web dashboard (internal — forwarded to :9119) | ✅ Yes |
 | 11434 | **Ollama** | Local LLM server for embeddings | ❌ Internal |
 | N/A | **Hermes CLI** | Terminal-based agent interface | ❌ Terminal only |

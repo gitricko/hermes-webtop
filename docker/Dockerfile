@@ -1,6 +1,6 @@
 ARG HERMES_VERSION="v2026.9.14"
 ARG OMNIROUTE_VERSION=3.8.50
-ARG MODELRELAY_VERSION=1.22.1
+ARG NINEROUTER_VERSION=0.5.81
 ARG OLLAMA_VERSION=0.34.1
 ARG NODE_VERSION=26.7.0
 ARG CODE_SERVER_VERSION=4.137.0
@@ -61,11 +61,11 @@ RUN curl -fsSL "https://raw.githubusercontent.com/NousResearch/hermes-agent/${HE
     CI=1 npm run build -w web --silent 2>&1 && \
     npm cache clean --force
 
-# Install ModelRelay and start automatically in the background
-ARG MODELRELAY_VERSION
-RUN npm install -g modelrelay@${MODELRELAY_VERSION} && \
+# Install 9Router and start automatically in the background
+ARG NINEROUTER_VERSION
+RUN npm install -g 9router@${NINEROUTER_VERSION} && \
     npm cache clean --force
-# RUN npm install -g github:gitricko/modelrelay && \
+# RUN npm install -g github:gitricko/9router && \
 
 # Install OmniRoute and start automatically when desktop loads
 ARG OMNIROUTE_VERSION

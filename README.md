@@ -1,5 +1,5 @@
 # 🪽 Hermes — Web Top
-_Run Hermes-Agent inside a browser-based VSCode + Linux desktop with free LLM support through ModelRelay._
+_Run Hermes-Agent inside a browser-based VSCode + Linux desktop with free LLM support through _9Router_._
 
 <p align="center">
     <picture>
@@ -29,7 +29,7 @@ Just open this repo in a GitHub Codespace, start the container and you will get:
 - A complete Ubuntu MATE desktop (WebTop) for computer use
 - CodeServer at port 8888 with Hermes + Claude Code (cli + vscode extension) installed and preconfigured
 - Ollama server pre-installed and auto-started
-- ModelRelay pre-installed, auto-started and pre-configured as default model for Hermes and Claude Code
+- _9Router_ pre-installed, auto-started and pre-configured as default model for Hermes and Claude Code
 - **Pi coding agent** pre-installed, configured to proxy through OmniRoute (`auto-fastest`) — desktop launcher + default model
 - Hermes gateway accessible via desktop launcher
 - [Mnemon](https://github.com/mnemon-dev/mnemon) as your Hermes default [memory provider](https://github.com/gitricko/hermes-plugin-mnemon)
@@ -46,7 +46,7 @@ The only catch? You normally need a dedicated machine with GPU.
 
 Perfect for:
 - Trying Hermes-Agent risk-free
-- Free LLM APIs through [ModelRelay](https://github.com/ellipticmarketing/modelrelay) or [OmniRoute](https://github.com/diegosouzapw/OmniRoute)
+- Free LLM APIs through [_9Router_](https://github.com/decolua/9router) or [OmniRoute](https://github.com/diegosouzapw/OmniRoute)
 - Students / hackers / evaluators
 - Anyone who wants a personal AI assistant without breaking the bank
 
@@ -91,17 +91,17 @@ Perfect for:
 ## 🔧 Features
 
 - **Zero local install** — everything runs in browser via GitHub Codespaces
-- **Free-tier friendly** — uses ModelRelay, Ollama daily cloud credits or NVIDIA Build API fallback
+- **Free-tier friendly** — uses _9Router_, Ollama daily cloud credits or NVIDIA Build API fallback
 - **Persistent config** — docker volume backup and restore after Codespace recreation
 - **Easy backup/restore** — `make backup` / `make restore`
 - **One-command everything** — powerful Makefile + clean `docker-compose.yml`
-- **Auto-start ModelRelay** — Default configuration for Free LLM API to Hermes
+- **Auto-start _9Router_** — Default configuration for Free LLM API to Hermes
 - **Auto-start OmniRoute** — You need some configuration before it work but it is flexible and powerful
 - **Pi coding agent** — pre-installed CLI; default model set to `omniroute` (`auto-fastest`). Launch it from the **Pi Agent** desktop icon or run `pi` / `pi -p "prompt"` in a terminal. Config lives in `~/.pi/agent/` (seeded once, then user-editable).
 - **Auto-start Ollama** — custom init script on WebTop boot
 - **Colima / local Docker support** ready
 - **Built-in code-server IDE** — browser-based VS Code on port `8888`
-- **Multiple AI VSCode Extension preinstall/config with ModelRelay** - Cline, Hermes and ClaudeCode
+- **Multiple AI VSCode Extension preinstall/config with _9Router_** - Cline, Hermes and ClaudeCode
 - **Mnemon as default memory provider** - a knowledge store for Hermes with intent-aware recall, importance decay, and auto-deduplication
 
 ## 🧑‍💻 Built-in code-server IDE (VSCode on the Web - Interface to Agent)
@@ -116,7 +116,7 @@ This image includes `code-server` and exposes it on port `8888`.
 > Note: this setup may use `code-server --auth none` in development, so keep port `8888` private. For local production use, secure it with an authenticated reverse proxy or firewall.
 
 - Hermes Agent's Extension is preinstalled and configured in VSCode
-- Claude Code Extension is also preinstall and configured to ModelRelay
+- Claude Code Extension is also preinstall and configured to _9Router_
 - Start Hacking away in VSCode, use WebTop if you need to monitor agent do desktop-use operations. eg: Non-Headless Chrome debugging for instance / Linux Computer-Use
 
 ## 🔒 Security: Protected by GitHub Authentication

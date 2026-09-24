@@ -105,7 +105,7 @@ if ! should_skip "services"; then
 
     # Collecting responses
     if [ "$ELAPSED" -gt "$PORT_POLL_TIMEOUT" ]; then
-      for pair in "3000:WebTop" "8888:CodeServer" "7352:ModelRelay" "20128:OmniRoute", "9119:HermesGateway"; do
+      for pair in "3000:WebTop" "8888:CodeServer" "7352:9Router" "20128:OmniRoute", "9119:HermesGateway"; do
         PORT="${pair%%:*}"
         NAME="${pair##*:}"
         if [ "${RESPONDED[$PORT]}" != "true" ]; then
@@ -116,7 +116,7 @@ if ! should_skip "services"; then
     fi
 
     # Testing ports
-    for pair in "3000:WebTop" "8888:CodeServer" "7352:ModelRelay" "20128:OmniRoute" "9119:HermesGateway"; do
+    for pair in "3000:WebTop" "8888:CodeServer" "7352:9Router" "20128:OmniRoute" "9119:HermesGateway"; do
       PORT="${pair%%:*}"
       NAME="${pair##*:}"
 
