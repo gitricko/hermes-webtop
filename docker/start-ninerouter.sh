@@ -19,7 +19,7 @@ ensure_ownership "/usr/local/lib/node_modules/9router"
 
 # Start 9Router (persistent daemon — no restart loop needed)
 echo "[start-ninerouter] Starting 9Router..."
-nohup 9router --host 0.0.0.0 --host 127.0.0.1 --port 7352 --no-browser --skip-update >> /tmp/9router.log 2>&1 &
+nohup 9router --host 0.0.0.0 --host 127.0.0.1 --log --port 7352 --no-browser --skip-update >> /tmp/9router.log 2>&1 &
 
 # Wait for 9Router to become ready (poll /api/health, up to 300s)
 # Same pattern as hermes-codespace post-create-cmd.sh

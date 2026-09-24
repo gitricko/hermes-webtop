@@ -181,7 +181,8 @@ jobs:
           name: failure-logs-${{ github.run_id }}
           path: /tmp/failure-logs/
           if-no-files-found: warn
-         
+          retention-days: 7
+
   push-to-ghcr:
     runs-on: ubuntu-latest
     # Run if on main branch, or if manual_push is yes from workflow_dispatch
@@ -376,3 +377,4 @@ jobs:
           name: failure-logs-${{ github.run_id }}
           path: /tmp/failure-logs/
           if-no-files-found: warn
+          retention-days: 7
