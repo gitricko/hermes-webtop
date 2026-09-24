@@ -124,12 +124,27 @@ if ! should_skip "services"; then
         continue
       fi
 
-      HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 "http://localhost:${PORT}" 2>/dev/null || HTTP_CODE="000")
+      # Use /v1/models for 9Router (functional API endpoint), / for others
+      if [ "$PORT" = "7352" ]; then
+        HEALTH_ENDPOINT="/v1/models"
+      else
+        HEALTH_ENDPOINT="/"
+      fi
+
+      HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 "http://localhost:${PORT}${HEALTH_ENDPOINT}" 2>/dev/null || HTTP_CODE="000")
       HTTP_CODE=$(echo "$HTTP_CODE" | tr -d '[:space:]')
 
       if [ -n "$HTTP_CODE" ] && [ "$HTTP_CODE" != "000" ]; then
-        echo "  $NAME (:$PORT) — ✅ HTTP ${HTTP_CODE} (${ELAPSED}s)"
-        RESPONDED[$PORT]="true"
+        case "$HTTP_CODE" in
+          2*|3*)
+            echo "  $NAME (:$PORT) — ✅ HTTP ${HTTP_CODE} (${ELAPSED}s)"
+            RESPONDED[$PORT]="true"
+            ;;
+          *)
+            # 4xx/5xx = service responded but unhealthy — warn, keep polling
+            echo "  $NAME (:$PORT) — ⚠️ HTTP ${HTTP_CODE} (${ELAPSED}s) — unhealthy, waiting..."
+            ;;
+        esac
       fi
     done
 
