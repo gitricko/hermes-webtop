@@ -25,17 +25,20 @@ echo "[9router-config] Disabling requireLogin and requireApiKey..."
 curl -s -X PATCH "$BASE_URL/api/settings" -H "Content-Type: application/json" "${AUTH_ARGS[@]}" -d '{"requireLogin":false,"requireApiKey":false}' > /dev/null
 echo "[9router-config] Settings updated: requireLogin=false, requireApiKey=false"
 
-# 3) delete existing auto-fastest combo if present
-echo "[9router-config] Deleting existing auto-fastest combo if present..."
-curl -s -X DELETE "$BASE_URL/api/combos/auto-fastest" \
-    -H "Content-Type: application/json" \
-    "${AUTH_ARGS[@]}" > /dev/null || true
-echo "[9router-config] Existing combo deleted (or did not exist)"
+# 3) delete the combo if it already exists (lookup by ID)
+COMBO_ID="$(curl -fsS -b "$COOKIE_JAR" "$BASE_URL/api/combos" |
+  jq -r '.combos[] | select(.name=="auto-fastest") | .id' | head -n 1)"
+if [[ -n "$COMBO_ID" ]]; then
+  echo "[9router-config] Deleting existing auto-fastest combo (ID: $COMBO_ID)..."
+  curl -fsS -b "$COOKIE_JAR" -X DELETE "$BASE_URL/api/combos/$COMBO_ID" | jq
+else
+  echo "[9router-config] No existing auto-fastest combo found"
+fi
 
 # 4) create new auto-fastest combo with 8 free oc/ models
 echo "[9router-config] Creating new auto-fastest combo with 8 free oc/ models..."
 
-MODELS='["oc/muse-spark-1.2","oc/muse-spark-1.3","oc/union-alpha","oc/big-pickle","oc/mimo-v2.5-free","oc/ling-3.0-flash-fin-free","oc/nemotron-3-ultra-free","oc/nemotron-3.5-lightning-free"]'
+MODELS='["oc/muse-spark-1.2-contributor-free","oc/muse-spark-1.3-contributor-free","oc/union-alpha","oc/big-pickle","oc/mimo-v2.5-free","oc/ling-3.0-flash-fin-free","oc/nemotron-3-ultra-free","oc/nemotron-3.5-lightning-free"]'
 
 CREATE_RESPONSE=$(curl -s -X POST "$BASE_URL/api/combos" -H "Content-Type: application/json" "${AUTH_ARGS[@]}" -d "{\"name\":\"auto-fastest\",\"models\":$MODELS}")
 
@@ -57,10 +60,10 @@ echo "[9router-config] comboStrategies.fallback set to round-robin"
 
 # 7) smoke test via /v1/chat/completions
 echo "[9router-config] Running smoke test via /v1/chat/completions..."
-SMOKE_RESPONSE=$(curl -s -X POST "$BASE_URL/v1/chat/completions" \
+SMOKE_RESPONSE=$(curl -fsS "$BASE_URL/v1/chat/completions" \
     -H "Content-Type: application/json" \
     "${AUTH_ARGS[@]}" \
-    -d '{"model":"auto-fastest","messages":[{"role":"user","content":"hello"}]}')
+    -d '{"model":"auto-fastest","messages":[{"role":"user","content":"Reply with exactly: OK"}],"stream":false,"max_tokens":16}')
 
 SMOKE_CONTENT=$(echo "$SMOKE_RESPONSE" | jq -r '.choices[0].message.content // empty')
 

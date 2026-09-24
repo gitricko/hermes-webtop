@@ -69,7 +69,6 @@ RUN curl -fsSL "https://raw.githubusercontent.com/NousResearch/hermes-agent/${HE
 ARG NINEROUTER_VERSION
 RUN npm install -g 9router@${NINEROUTER_VERSION} && \
     npm cache clean --force
-# RUN npm install -g github:gitricko/9router && \
 
 # Install OmniRoute and start automatically when desktop loads
 ARG OMNIROUTE_VERSION
