@@ -23,6 +23,6 @@ nohup bash -c 'while true; do 9router --host 0.0.0.0 --host 127.0.0.1 --port 735
 sleep 10
 
 # Configure 9Router: login, disable auth, create auto-fastest combo, smoke test
-bash /custom-cont-init.d/9router-config.sh >> /tmp/9router-config.log 2>&1
+bash /usr/local/bin/9router-config >> /tmp/9router-config.log 2>&1
 
 EOF

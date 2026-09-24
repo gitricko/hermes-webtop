@@ -50,6 +50,10 @@ COPY --chown=abc:abc *.md /custom-cont-init.d
 # Move self-check to usr/local/bin to prevent it running as a boot-time init script
 RUN mv /custom-cont-init.d/self-check.sh /usr/local/bin/self-check && chmod +x /usr/local/bin/self-check
 
+# Move 9router-config out of init.d too — it must only run from start-ninerouter.sh
+# (after 9Router is listening), not as an s6 boot init script.
+RUN mv /custom-cont-init.d/9router-config.sh /usr/local/bin/9router-config && chmod +x /usr/local/bin/9router-config
+
 # Install Hermes
 ARG HERMES_VERSION
 ENV HERMES_HOME=/config/.hermes
