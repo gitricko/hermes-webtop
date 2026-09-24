@@ -19,10 +19,11 @@ ensure_ownership "/usr/local/lib/node_modules/9router"
 
 # Start 9Router
 echo "[start-ninerouter] Starting 9Router..."
-nohup bash -c 'while true; do 9router --host 0.0.0.0 --host 127.0.0.1 --port 7352 --no-browser --skip-update >> /tmp/9router.log 2>&1; sleep 3; done' &
+nohup 9router --host 0.0.0.0 --host 127.0.0.1 --port 7352 --no-browser --skip-update >> /tmp/9router.log 2>&1 &
 sleep 10
 
 # Configure 9Router: login, disable auth, create auto-fastest combo, smoke test
-bash /usr/local/bin/9router-config >> /tmp/9router-config.log 2>&1
+echo "[start-ninerouter] 9Router configuration skipped (config step disabled — runs only from Docker build init)"
+# bash /usr/local/bin/9router-config >> /tmp/9router-config.log 2>&1
 
 EOF

@@ -2,31 +2,34 @@
 set -euo pipefail
 
 BASE_URL="http://localhost:7352"
+COOKIE_JAR="/tmp/9router-cookie.txt"
+rm -f "$COOKIE_JAR"
 
-# 1) login with password 123456 via POST /api/auth/login
+# 1) login via POST /api/auth/login — 9Router uses HttpOnly cookie (auth_token)
 echo "[9router-config] Logging in with password..."
-LOGIN_RESPONSE=$(curl -s -X POST "$BASE_URL/api/auth/login" -H "Content-Type: application/json" -d '{"password":"123456"}')
-TOKEN=$(echo "$LOGIN_RESPONSE" | jq -r '.token // empty')
-
-if [ -z "$TOKEN" ] || [ "$TOKEN" = "null" ]; then
-    echo "[9router-config] Error: Failed to login, no token received"
-    echo "[9router-config] Response: $LOGIN_RESPONSE"
-    exit 1
+LOGIN_RESPONSE=$(curl -s -c "$COOKIE_JAR" -X POST "$BASE_URL/api/auth/login" -H "Content-Type: application/json" -d '{"password":"123456"}' 2>&1 || echo '{}')
+if ! echo "$LOGIN_RESPONSE" | jq -e '.success // empty' >/dev/null 2>&1; then
+    echo "[9router-config] WARNING: login body: $LOGIN_RESPONSE"
+fi
+if [ ! -f "$COOKIE_JAR" ] || ! grep -q "auth_token" "$COOKIE_JAR" 2>/dev/null; then
+    echo "[9router-config] WARNING: no auth_token cookie set — login may have failed"
+else
+    echo "[9router-config] Login successful (auth cookie set)"
 fi
 
-echo "[9router-config] Login successful"
-AUTH="Authorization: Bearer $TOKEN"
+# Cookie-based auth for all subsequent requests
+AUTH_ARGS=("-b" "$COOKIE_JAR")
 
 # 2) disable requireLogin and requireApiKey via PATCH /api/settings
 echo "[9router-config] Disabling requireLogin and requireApiKey..."
-curl -s -X PATCH "$BASE_URL/api/settings" -H "Content-Type: application/json" -H "$AUTH" -d '{"requireLogin":false,"requireApiKey":false}' > /dev/null
+curl -s -X PATCH "$BASE_URL/api/settings" -H "Content-Type: application/json" "${AUTH_ARGS[@]}" -d '{"requireLogin":false,"requireApiKey":false}' > /dev/null
 echo "[9router-config] Settings updated: requireLogin=false, requireApiKey=false"
 
 # 3) delete existing auto-fastest combo if present
 echo "[9router-config] Deleting existing auto-fastest combo if present..."
 curl -s -X DELETE "$BASE_URL/api/combos/auto-fastest" \
     -H "Content-Type: application/json" \
-    -H "$AUTH" > /dev/null || true
+    "${AUTH_ARGS[@]}" > /dev/null || true
 echo "[9router-config] Existing combo deleted (or did not exist)"
 
 # 4) create new auto-fastest combo with 8 free oc/ models
@@ -34,7 +37,7 @@ echo "[9router-config] Creating new auto-fastest combo with 8 free oc/ models...
 
 MODELS='["oc/muse-spark-1.2","oc/muse-spark-1.3","oc/union-alpha","oc/big-pickle","oc/mimo-v2.5-free","oc/ling-3.0-flash-fin-free","oc/nemotron-3-ultra-free","oc/nemotron-3.5-lightning-free"]'
 
-CREATE_RESPONSE=$(curl -s -X POST "$BASE_URL/api/combos" -H "Content-Type: application/json" -H "$AUTH" -d "{\"name\":\"auto-fastest\",\"models\":$MODELS}")
+CREATE_RESPONSE=$(curl -s -X POST "$BASE_URL/api/combos" -H "Content-Type: application/json" "${AUTH_ARGS[@]}" -d "{\"name\":\"auto-fastest\",\"models\":$MODELS}")
 
 echo "$CREATE_RESPONSE" | jq -e '.name // empty' > /dev/null || {
     echo "[9router-config] Error: Failed to create combo"
@@ -48,7 +51,7 @@ echo "[9router-config] Combo auto-fastest created successfully"
 echo "[9router-config] Setting round-robin fallback strategy via comboStrategies..."
 curl -s -X PATCH "$BASE_URL/api/settings" \
     -H "Content-Type: application/json" \
-    -H "$AUTH" \
+    "${AUTH_ARGS[@]}" \
     -d '{"comboStrategies":{"fallback":"round-robin"}}' > /dev/null
 echo "[9router-config] comboStrategies.fallback set to round-robin"
 
@@ -56,7 +59,7 @@ echo "[9router-config] comboStrategies.fallback set to round-robin"
 echo "[9router-config] Running smoke test via /v1/chat/completions..."
 SMOKE_RESPONSE=$(curl -s -X POST "$BASE_URL/v1/chat/completions" \
     -H "Content-Type: application/json" \
-    -H "$AUTH" \
+    "${AUTH_ARGS[@]}" \
     -d '{"model":"auto-fastest","messages":[{"role":"user","content":"hello"}]}')
 
 SMOKE_CONTENT=$(echo "$SMOKE_RESPONSE" | jq -r '.choices[0].message.content // empty')
