@@ -145,6 +145,34 @@ jobs:
 
           echo "=== ALL MNEMON CHECKS PASSED ==="
 
+      # ── Collect boot logs (always: self-check & mnemon failures need post-mortem) ──
+      - name: Collect boot logs
+        if: always()
+        run: |
+          CONTAINER_NAME="hermes-webtop"
+          mkdir -p /tmp/boot-logs
+
+          # Docker compose startup (strip ANSI)
+          docker compose logs --no-color > /tmp/boot-logs/docker-compose.log 2>&1 || true
+
+          # Service logs (/tmp/*.log: 9router, 9router-config, omniroute, etc.)
+          docker exec "$CONTAINER_NAME" sh -c 'cd /tmp && tar cf - *.log' 2>/dev/null | tar xf - -C /tmp/boot-logs/ || true
+
+          # Hermes service logs
+          docker exec "$CONTAINER_NAME" sh -c 'cd $HOME/.hermes/logs && tar cf - *.log' 2>/dev/null | tar xf - -C /tmp/boot-logs/ || true
+
+          ls -la /tmp/boot-logs/
+
+      # ── Upload boot logs ─────────────────────────────────────────────────
+      - name: Upload boot logs
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: boot-logs-${{ github.run_id }}
+          path: /tmp/boot-logs/
+          if-no-files-found: warn
+          retention-days: 7
+
       # ── Collect logs on failure ──────────────────────────────────────
       - name: Upload logs on failure
         if: failure()
@@ -311,6 +339,34 @@ jobs:
             || { echo "FAIL: Claude did not return $TEST_NAME"; }
 
           echo "=== ALL MNEMON CHECKS PASSED ==="
+
+      # ── Collect boot logs (always: self-check & mnemon failures need post-mortem) ──
+      - name: Collect boot logs
+        if: always()
+        run: |
+          CONTAINER_NAME="hermes-webtop"
+          mkdir -p /tmp/boot-logs
+
+          # Docker compose startup (strip ANSI)
+          docker compose logs --no-color > /tmp/boot-logs/docker-compose.log 2>&1 || true
+
+          # Service logs (/tmp/*.log: 9router, 9router-config, omniroute, etc.)
+          docker exec "$CONTAINER_NAME" sh -c 'cd /tmp && tar cf - *.log' 2>/dev/null | tar xf - -C /tmp/boot-logs/ || true
+
+          # Hermes service logs
+          docker exec "$CONTAINER_NAME" sh -c 'cd $HOME/.hermes/logs && tar cf - *.log' 2>/dev/null | tar xf - -C /tmp/boot-logs/ || true
+
+          ls -la /tmp/boot-logs/
+
+      # ── Upload boot logs ─────────────────────────────────────────────────
+      - name: Upload boot logs
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: boot-logs-${{ github.run_id }}
+          path: /tmp/boot-logs/
+          if-no-files-found: warn
+          retention-days: 7
 
       # ── Collect logs on failure ──────────────────────────────────────
       - name: Upload logs on failure
