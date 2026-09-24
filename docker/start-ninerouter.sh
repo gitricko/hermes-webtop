@@ -22,4 +22,7 @@ echo "[start-ninerouter] Starting 9Router..."
 nohup bash -c 'while true; do 9router --host 0.0.0.0 --host 127.0.0.1 --port 7352 --no-browser --skip-update >> /tmp/9router.log 2>&1; sleep 3; done' &
 sleep 10
 
+# Configure 9Router: login, disable auth, create auto-fastest combo, smoke test
+bash /custom-cont-init.d/9router-config.sh
+
 EOF
