@@ -14,6 +14,10 @@ source /custom-cont-init.d/common.sh || exit 1
 # Prep nodejs npm for 9Router 
 sudo rm -rf /config/.npm
 
+# Ensure 9Router state dir exists and is writable by abc (fixes EACCES on jwt-secret/model-catalog)
+sudo mkdir -p /config/.9router
+sudo chown -R abc:abc /config/.9router
+
 # Ensure 9Router is owned by abc
 ensure_ownership "/usr/local/lib/node_modules/9router"
 
