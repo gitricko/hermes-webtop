@@ -64,7 +64,10 @@ jobs:
 
           # Start container like how it is used - DevProd Parity
           NO_LOGS=1 DOCKER_URI=hermes-webtop:test make start
-
+          
+          # sleep 10min
+          sleep 600
+          
           # Wait for init scripts to finish (port 9119 responding = start-hermes.sh done)
           echo "=== Waiting for Hermes to become healthy ==="
           for i in $(seq 1 30); do
