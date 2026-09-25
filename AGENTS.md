@@ -146,6 +146,27 @@ When modifying Dockerfile or installing packages:
 | Mnemon Integration Test skip | Self-check failed before reaching Mnemon | Fix self-check → Mnemon passes |
 | PI install branch not found | `hermes-impl` branch missing | Changed to `@main` in pi-settings.json + start-pi.sh |
 | `--log` flag reveals hidden errors | Without it, only saw HTTP 500 | Add `--log` to 9Router launch for visibility |
+| `git push` → "Invalid username or token" / "No anonymous write access" | Codespaces' `GH_TOKEN`/credential helper is not a usable git credential | Extract `GITHUB_TOKEN` from the VS Code server process and use `git config credential.helper store` + `~/.git-credentials` (see Git Auth below) |
+| `gh auth git-credential` not found | That helper only exists when `gh` is installed and on PATH | Do not set it as `credential.helper` — use the token + `credential.helper store` path instead |
+
+## Git Auth (Codespaces) — never use the `gh` credential helper
+
+**Rule: never set `git config credential.helper "gh auth git-credential"`.** It fails
+in this Codespace with `git: 'credential-gh' is not a git command`, then the push
+falls back to anonymous and dies with `remote: No anonymous write access`.
+
+Use the VS Code server token instead:
+
+```bash
+VSCODE_PID=$(pgrep -f "server-main.js" | head -1)
+GITHUB_TOKEN=$(cat /proc/$VSCODE_PID/environ 2>/dev/null | tr '\0' '\n' \
+  | grep "^GITHUB_TOKEN=" | cut -d= -f2-)
+git config credential.helper store
+echo "https://gitricko:${GITHUB_TOKEN}@github.com" > ~/.git-credentials
+git push origin <branch>
+```
+
+Never print the token value; only ever echo a masked prefix for diagnosis.
 
 ## Deliverable Checklist (before saying "done")
 
@@ -165,6 +186,7 @@ When modifying Dockerfile or installing packages:
 - ❌ Never modify another profile's skills/plugins/cron/memories without explicit direction
 - ❌ Never ignore `set -euo pipefail` consequences — know what breaks
 - ❌ Never commit without running `git diff --stat` first
+- ❌ Never use `gh auth git-credential` as `git config credential.helper` — it does not exist in this Codespace, and the fallback push fails with "No anonymous write access"
 
 ## File this session's lessons
 
