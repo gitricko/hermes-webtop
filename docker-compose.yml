@@ -34,7 +34,7 @@ services:
       - 9119:9119
       # hermes api server (if enabled)
       - 8642:8642
-      # modelrelay specific ports (adjust as needed)
+      # 9Router specific ports (adjust as needed)
       - 7352:7352
       # OmniRoute specific ports (adjust as needed)
       - 20128:20128

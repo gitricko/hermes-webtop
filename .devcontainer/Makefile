@@ -8,16 +8,15 @@ EXTERNAL_DEVC := $(EXTERNAL_DIR)/.devcontainer
 
 # === Development Commands ===
 
-install:
-	@echo "Installing dependencies..."
-	@bash post-create-cmd.sh
+boot-minions:
+	~/.minions/boot.sh
 
-ext-install:
-	@echo "Installing external dependencies..."
-	mkdir -p ~/.cline/data
-	cp globalState.json ~/.cline/data/
-	cp secrets.json ~/.cline/data/
-	code --force --install-extension saoudrizwan.claude-dev
+self-check:
+	~/.minions/self-check.sh
+
+version-check:
+	./scripts/admin-update.sh --dry-run
+
 # === Template Update Commands ===
 
 # Use this command to update your .devcontainer folder with latest from upstream

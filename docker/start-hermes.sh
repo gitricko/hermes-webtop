@@ -10,7 +10,7 @@ SRC="/custom-cont-init.d/Hermes.desktop"
 
 # Fast change ownership of hermes-agent root directory to abc user to avoid permission issues
 shopt -s dotglob
-chown abc:abc /usr/local/lib/hermes-agent/*
+chown abc:abc -R /usr/local/lib/hermes-agent/*
 shopt -u dotglob
 
 runuser -l abc <<'EOF'
@@ -21,16 +21,24 @@ runuser -l abc <<'EOF'
   if [ -d "$HOME/.hermes/logs" ] && [ -z "$(ls -A "$HOME/.hermes/logs")" ]; then
     echo "[start-hermes] No logs found in $HOME/.hermes/logs, setting up default configuration for custom provider"
     echo "[start-hermes] Initializing hermes config..."
-    hermes config set terminal.cwd $HOME
+    hermes config set terminal.cwd '${PWD}'
+    hermes config set display.busy_input_mode steer
     hermes config set model.default auto-fastest
     hermes config set model.provider omniroute
     hermes config set providers.omniroute.base_url http://localhost:20128/v1
     hermes config set providers.omniroute.api_key no-key-needed
-    hermes config set providers.modelrelay.base_url http://localhost:7352/v1
-    hermes config set providers.modelrelay.api_key no-key-needed
-    hermes config set fallback_providers.provider modelrelay
+    hermes config set providers.9router.base_url http://localhost:7352/v1
+    hermes config set providers.9router.api_key no-key-needed
+    hermes config set fallback_providers.provider 9router
     hermes config set fallback_providers.model auto-fastest
-  
+
+    hermes config set auxiliary.title_generation.model auto-fastest
+    hermes config set auxiliary.title_generation.provider 9router
+    hermes config set auxiliary.vision.model auto-fastest
+    hermes config set auxiliary.vision.provider 9router
+    hermes config set auxiliary.compression.model auto-fastest
+    hermes config set auxiliary.compression.provider 9router
+
     # Turn off approval alert and live dangerously since u are in a self-contained container.
     hermes config set approvals.mode off
     # Turn on memory by default and to mnemon
@@ -40,8 +48,6 @@ runuser -l abc <<'EOF'
     # optimize for kanban
     hermes config set agent.max_turns 120
     hermes config set kanban.failure_limit 3
-    # default: a message typed while a turn is running steers into the run, not interrupt it
-    hermes config set display.busy_input_mode steer
 
     # Populate default skill and .hermes.md
     echo "[start-hermes] Installing Skill: memory-automation.md"

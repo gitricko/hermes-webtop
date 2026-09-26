@@ -1,0 +1,8 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Terminal=false
+Exec=mate-terminal --title="9Router" -e "bash -c '9router --host 0.0.0.0 --host 127.0.0.1 --port 7352 --no-browser --skip-update; exec bash'"
+Name[en_US]=9Router
+Name=9Router
+GenericName[en_US.UTF-8]=9Router
