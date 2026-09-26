@@ -233,14 +233,16 @@ section "Hermes"
 
 if ! should_skip "hermes"; then
   if [ -f "$HERMES_CONFIG" ]; then
-    cfg_model=$(grep -A2 '^model:' "$HERMES_CONFIG" 2>/dev/null | grep 'default' | head -1 | sed 's/.*default: *//' || echo "unknown")
-    cfg_provider=$(grep -A2 '^model:' "$HERMES_CONFIG" 2>/dev/null | grep 'provider' | head -1 | sed 's/.*provider: *//' || echo "unknown")
+    cfg_model=$(grep -A4 '^model:' "$HERMES_CONFIG" 2>/dev/null | grep '^ *default:' | head -1 | sed -E "s/.*default:[[:space:]]*//;s/#.*//;s/^[[:space:]]*//;s/[[:space:]]*\$//;s/[\"']//g" || echo "unknown")
+    cfg_provider=$(grep -A4 '^model:' "$HERMES_CONFIG" 2>/dev/null | grep '^ *provider:' | head -1 | sed -E "s/.*provider:[[:space:]]*//;s/#.*//;s/^[[:space:]]*//;s/[[:space:]]*\$//;s/[\"']//g" || echo "unknown")
     has_gateway=$(curl -s -o /dev/null -w "%{http_code}" --max-time 3 "$HERMES_GATEWAY_URL" 2>/dev/null || true)
     has_gateway="${has_gateway:-000}"
 
     if [ -n "$cfg_model" ]; then
       _ok "Config" "model=${cfg_model}, provider=${cfg_provider:-unset}"
-      json_add "hermes:config" "ok" "config valid: model=$cfg_model, provider=$cfg_provider" "{\"model\":\"${cfg_model}\",\"provider\":\"${cfg_provider}\"}"
+      cfg_model_json=$(printf "%s" "$cfg_model" | python3 -c "import json,sys; print(json.dumps(sys.stdin.read()))")
+      cfg_provider_json=$(printf "%s" "$cfg_provider" | python3 -c "import json,sys; print(json.dumps(sys.stdin.read()))")
+      json_add "hermes:config" "ok" "config valid: model=$cfg_model, provider=$cfg_provider" "{\"model\":${cfg_model_json},\"provider\":${cfg_provider_json}}"
     else
       _warn "Config" "model not set in config (may be fresh install)"
       json_add "hermes:config" "warn" "model not configured" "{}"
