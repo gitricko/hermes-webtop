@@ -1,6 +1,6 @@
 ARG HERMES_VERSION="v2026.9.24"
 ARG OMNIROUTE_VERSION=3.8.50
-ARG NINEROUTER_VERSION=0.5.86
+ARG NINEROUTER_VERSION=0.5.91
 ARG OLLAMA_VERSION=0.34.4
 ARG NODE_VERSION=26.10.0
 ARG CODE_SERVER_VERSION=4.139.1
@@ -53,11 +53,12 @@ RUN mv /custom-cont-init.d/self-check.sh /usr/local/bin/self-check && chmod +x /
 # Install Hermes
 ARG HERMES_VERSION
 ENV HERMES_HOME=/config/.hermes
-RUN curl -fsSL "https://raw.githubusercontent.com/NousResearch/hermes-agent/${HERMES_VERSION}/scripts/install.sh" | bash -s -- --skip-setup && \
+RUN curl --retry 5 --retry-delay 10 --retry-connrefused --retry-all-errors -fsSL \
+    "https://raw.githubusercontent.com/NousResearch/hermes-agent/${HERMES_VERSION}/scripts/install.sh" \
+    | bash -s -- --skip-setup || exit 1; \
     rm -rf /var/lib/apt/lists/* && \
     cd /usr/local/lib/hermes-agent && \
-    CI=1 npm ci --include=dev --workspace web --silent 2>&1 || \
-    CI=1 npm install --no-save --include=dev --workspace web --silent 2>&1 && \
+    CI=1 npm ci --include=dev --workspace web --silent 2>&1 && \
     CI=1 npm run build -w web --silent 2>&1 && \
     npm cache clean --force
 
