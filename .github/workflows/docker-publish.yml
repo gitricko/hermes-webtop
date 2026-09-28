@@ -153,8 +153,12 @@ jobs:
             /config/.local/bin/claude --dangerously-skip-permissions -p \
             "Use mnemon recall to find my name. Reply with ONLY the name." 2>&1) || true
           echo "Claude: $CLAUDE_OUTPUT"
-          echo "$CLAUDE_OUTPUT" | grep -q "$TEST_NAME" \
-            || { echo "FAIL: Claude did not return $TEST_NAME"; }
+          if echo "$CLAUDE_OUTPUT" | grep -q "$TEST_NAME"; then
+            echo "PASS: Claude returned $TEST_NAME"
+          else
+            echo "FAIL: Claude did not return $TEST_NAME"
+            exit 1
+          fi
 
           echo "=== ALL MNEMON CHECKS PASSED ==="
 
@@ -358,8 +362,12 @@ jobs:
             /config/.local/bin/claude --dangerously-skip-permissions -p \
             "Use mnemon recall to find my name. Reply with ONLY the name." 2>&1) || true
           echo "Claude: $CLAUDE_OUTPUT"
-          echo "$CLAUDE_OUTPUT" | grep -q "$TEST_NAME" \
-            || { echo "FAIL: Claude did not return $TEST_NAME"; }
+          if echo "$CLAUDE_OUTPUT" | grep -q "$TEST_NAME"; then
+            echo "PASS: Claude returned $TEST_NAME"
+          else
+            echo "FAIL: Claude did not return $TEST_NAME"
+            exit 1
+          fi
 
           echo "=== ALL MNEMON CHECKS PASSED ==="
 
