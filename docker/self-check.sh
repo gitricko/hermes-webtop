@@ -233,6 +233,7 @@ section "Hermes"
 
 if ! should_skip "hermes"; then
   if [ -f "$HERMES_CONFIG" ]; then
+    cat "$HERMES_CONFIG"
     cfg_model=$(grep -A2 '^model:' "$HERMES_CONFIG" 2>/dev/null | grep '^ *default:' | head -1 | sed -E "s/.*default:[[:space:]]*//;s/#.*//;s/^[[:space:]]*//;s/[[:space:]]*\$//;s/[\"']//g" || echo "unknown")
     cfg_provider=$(grep -A2 '^model:' "$HERMES_CONFIG" 2>/dev/null | grep '^ *provider:' | head -1 | sed -E "s/.*provider:[[:space:]]*//;s/#.*//;s/^[[:space:]]*//;s/[[:space:]]*\$//;s/[\"']//g" || echo "unknown")
     has_gateway=$(curl -s -o /dev/null -w "%{http_code}" --max-time 3 "$HERMES_GATEWAY_URL" 2>/dev/null || true)
