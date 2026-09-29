@@ -15,7 +15,7 @@ self-check:
 	~/.minions/self-check.sh
 
 version-check:
-	./scripts/admin-update.sh --dry-run
+	../scripts/check-deps.sh
 
 # === Template Update Commands ===
 

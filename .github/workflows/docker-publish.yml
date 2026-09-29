@@ -76,6 +76,7 @@ jobs:
             if [ "$i" -eq 600 ]; then
               echo "WARNING: Hermes did not respond within $(($i * 10)) seconds."
             fi
+            sleep 10
           done
 
           # Run self-check (it has its own 120s polling loop for all ports)
