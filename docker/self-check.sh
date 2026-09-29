@@ -82,6 +82,29 @@ section() {
   echo " ───────────────────────────────────────────────"
 }
 
+# yaml_get <config_file> <dotted.key.path>
+# Reads a value out of a YAML file with a real parser, so that deeply indented
+# keys, long comment runs and quoted scalars are handled correctly. Prints the
+# value, or nothing if absent. Never fails the caller.
+# e.g. yaml_get "$HERMES_CONFIG" model.default
+yaml_get() {
+  python3 -c '
+import sys, yaml
+try:
+    with open(sys.argv[1]) as fh:
+        node = yaml.safe_load(fh)
+except Exception:
+    sys.exit(0)
+for key in sys.argv[2].split("."):
+    if not isinstance(node, dict):
+        sys.exit(0)
+    node = node.get(key)
+    if node is None:
+        sys.exit(0)
+print(node)
+' "$1" "$2" 2>/dev/null || true
+}
+
 # ── Checks ───────────────────────────────────────────────────────────────────
 
 echo ""
@@ -233,9 +256,11 @@ section "Hermes"
 
 if ! should_skip "hermes"; then
   if [ -f "$HERMES_CONFIG" ]; then
-    cat "$HERMES_CONFIG"
-    cfg_model=$(grep -A2 '^model:' "$HERMES_CONFIG" 2>/dev/null | grep '^ *default:' | head -1 | sed -E "s/.*default:[[:space:]]*//;s/#.*//;s/^[[:space:]]*//;s/[[:space:]]*\$//;s/[\"']//g" || echo "unknown")
-    cfg_provider=$(grep -A2 '^model:' "$HERMES_CONFIG" 2>/dev/null | grep '^ *provider:' | head -1 | sed -E "s/.*provider:[[:space:]]*//;s/#.*//;s/^[[:space:]]*//;s/[[:space:]]*\$//;s/[\"']//g" || echo "unknown")
+    cfg_model=$(yaml_get "$HERMES_CONFIG" model.default)
+    [ -n "$cfg_model" ] || cfg_model=$(yaml_get "$HERMES_CONFIG" model.model)
+    cfg_provider=$(yaml_get "$HERMES_CONFIG" model.provider)
+    cfg_model="${cfg_model:-unknown}"
+    cfg_provider="${cfg_provider:-unknown}"
     has_gateway=$(curl -s -o /dev/null -w "%{http_code}" --max-time 3 "$HERMES_GATEWAY_URL" 2>/dev/null || true)
     has_gateway="${has_gateway:-000}"
 
