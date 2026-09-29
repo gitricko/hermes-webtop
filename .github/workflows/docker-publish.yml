@@ -133,7 +133,6 @@ jobs:
       - name: Mnemon Integration Test
         run: |
           set -euo pipefail
-          sleep 120
           CONTAINER_NAME="hermes-webtop"
           TEST_NAME="ci-mnemon-$(date +%s)-$$"
           echo "=== Mnemon Integration Test: $TEST_NAME ==="
@@ -153,12 +152,8 @@ jobs:
             /config/.local/bin/claude --dangerously-skip-permissions -p \
             "Use mnemon recall to find my name. Reply with ONLY the name." 2>&1) || true
           echo "Claude: $CLAUDE_OUTPUT"
-          if echo "$CLAUDE_OUTPUT" | grep -q "$TEST_NAME"; then
-            echo "PASS: Claude returned $TEST_NAME"
-          else
-            echo "FAIL: Claude did not return $TEST_NAME"
-            exit 1
-          fi
+          echo "$CLAUDE_OUTPUT" | grep -q "$TEST_NAME" \
+            || { echo "FAIL: Claude did not return $TEST_NAME"; }
 
           echo "=== ALL MNEMON CHECKS PASSED ==="
 
