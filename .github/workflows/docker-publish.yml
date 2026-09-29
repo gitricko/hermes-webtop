@@ -68,7 +68,7 @@ jobs:
           # Wait for init scripts to finish (port 9119 responding = start-hermes.sh done)
           echo "=== Waiting for Hermes to become healthy ==="
           for i in $(seq 1 600); do
-            CODE=$(docker exec "$CONTAINER_NAME" curl -s -o /dev/null -w "%{http_code}" --max-time 5 "http://localhost:$PORT" 2>/dev/null | tr -d '[:space:]')
+            CODE=$(docker exec "$CONTAINER_NAME" curl -s -o /dev/null -w "%{http_code}" --max-time 5 "http://localhost:9119" 2>/dev/null | tr -d '[:space:]')
               if [ -n "$CODE" ] && [ "$CODE" != "000" ]; then
                 echo "Hermes responded HTTP $CODE after $((i * 10))s"
               break
