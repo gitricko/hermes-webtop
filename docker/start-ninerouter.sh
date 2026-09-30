@@ -1,0 +1,122 @@
+#!/bin/bash
+source /custom-cont-init.d/common.sh || exit 1
+
+SRC="/custom-cont-init.d/9Router.desktop"
+
+# Sync desktop file for desktop icon
+# sync_desktop_file "$SRC" "/config/Desktop/9Router.desktop"
+
+chown abc:abc -R /usr/local/bin/9router
+
+runuser -l abc <<'EOF'
+source /custom-cont-init.d/common.sh || exit 1
+
+# Prep nodejs npm for 9Router 
+sudo rm -rf /config/.npm
+
+# Ensure 9Router state dir exists and is writable by abc (fixes EACCES on jwt-secret/model-catalog)
+sudo mkdir -p /config/.9router
+sudo chown -R abc:abc /config/.9router
+
+# Ensure 9Router is owned by abc
+ensure_ownership "/usr/local/lib/node_modules/9router"
+
+# Start 9Router (persistent daemon — no restart loop needed)
+echo "[start-ninerouter] Starting 9Router..."
+nohup 9router --host 0.0.0.0 --host 127.0.0.1 --log --port 7352 --no-browser --skip-update >> /tmp/9router.log 2>&1 &
+
+# Wait for 9Router to become ready (poll /api/health, up to 300s)
+# Same pattern as hermes-codespace post-create-cmd.sh
+MAX_ATTEMPTS=300
+for ((attempt=1; attempt<=MAX_ATTEMPTS; attempt++)); do
+    if curl -s --max-time 3 -o /dev/null http://localhost:7352/api/health; then
+        echo "[start-ninerouter] 9Router ready after ${attempt}s"
+        break
+    fi
+    if [ "$attempt" -eq "$MAX_ATTEMPTS" ]; then
+        echo "[start-ninerouter] Error: 9Router failed to start after $MAX_ATTEMPTS attempts."
+        exit 1
+    fi
+    sleep 1
+done
+
+# Configure 9Router: login (cookie), disable auth, create auto-fastest combo, smoke test
+echo "[start-ninerouter] Configuring 9Router..."
+
+BASE_URL="http://localhost:7352"
+COOKIE_JAR="/tmp/9router-cookie.txt"
+rm -f "$COOKIE_JAR"
+
+# 1) login via POST /api/auth/login — 9Router uses HttpOnly cookie (auth_token)
+echo "[start-ninerouter] Logging in with password..."
+LOGIN_RESPONSE=$(curl -s -c "$COOKIE_JAR" -X POST "$BASE_URL/api/auth/login" -H "Content-Type: application/json" -d '{"password":"123456"}' 2>&1 || echo '{}')
+if ! echo "$LOGIN_RESPONSE" | jq -e '.success // empty' >/dev/null 2>&1; then
+    echo "[start-ninerouter] WARNING: login body: $LOGIN_RESPONSE"
+fi
+if [ ! -f "$COOKIE_JAR" ] || ! grep -q "auth_token" "$COOKIE_JAR" 2>/dev/null; then
+    echo "[start-ninerouter] WARNING: no auth_token cookie set — login may have failed"
+else
+    echo "[start-ninerouter] Login successful (auth cookie set)"
+fi
+
+# Cookie-based auth for all subsequent requests
+AUTH_ARGS=("-b" "$COOKIE_JAR")
+
+# 2) disable requireLogin and requireApiKey via PATCH /api/settings
+echo "[start-ninerouter] Disabling requireLogin and requireApiKey..."
+curl -s -X PATCH "$BASE_URL/api/settings" -H "Content-Type: application/json" "${AUTH_ARGS[@]}" -d '{"requireLogin":false,"requireApiKey":false}' > /dev/null
+echo "[start-ninerouter] Settings updated: requireLogin=false, requireApiKey=false"
+
+# 3) delete the combo if it already exists (lookup by ID)
+COMBO_ID="$(curl -fsS -b "$COOKIE_JAR" "$BASE_URL/api/combos" | jq -r '.combos[] | select(.name=="auto-fastest") | .id' | head -n 1)"
+if [[ -n "$COMBO_ID" ]]; then
+  echo "[start-ninerouter] Deleting existing auto-fastest combo (ID: $COMBO_ID)..."
+  curl -fsS -b "$COOKIE_JAR" -X DELETE "$BASE_URL/api/combos/$COMBO_ID" | jq
+else
+  echo "[start-ninerouter] No existing auto-fastest combo found"
+fi
+
+# 4) create new auto-fastest combo with 8 free oc/ models
+echo "[start-ninerouter] Creating new auto-fastest combo with 8 free oc/ models..."
+
+MODELS='["oc/muse-spark-1.2-contributor-free","oc/muse-spark-1.3-contributor-free","oc/union-alpha","oc/big-pickle","oc/mimo-v2.5-free","oc/ling-3.0-flash-fin-free","oc/nemotron-3-ultra-free","oc/nemotron-3.5-lightning-free"]'
+
+CREATE_RESPONSE=$(curl -s -X POST "$BASE_URL/api/combos" -H "Content-Type: application/json" "${AUTH_ARGS[@]}" -d "{\"name\":\"auto-fastest\",\"models\":$MODELS}")
+
+echo "$CREATE_RESPONSE" | jq -e '.name // empty' > /dev/null || {
+    echo "[start-ninerouter] Error: Failed to create combo"
+    echo "[start-ninerouter] Response: $CREATE_RESPONSE"
+    exit 1
+}
+echo "[start-ninerouter] Combo auto-fastest created successfully"
+
+# 5) set round-robin fallback strategy
+# 6) PATCH settings with comboStrategies
+echo "[start-ninerouter] Setting round-robin fallback strategy via comboStrategies..."
+curl -s -X PATCH "$BASE_URL/api/settings" \
+    -H "Content-Type: application/json" \
+    "${AUTH_ARGS[@]}" \
+    -d '{"comboStrategies":{"fallback":"round-robin"}}' > /dev/null
+echo "[start-ninerouter] comboStrategies.fallback set to round-robin"
+
+# 7) smoke test via /v1/chat/completions
+echo "[start-ninerouter] Running smoke test via /v1/chat/completions..."
+SMOKE_RESPONSE=$(curl -fsS "$BASE_URL/v1/chat/completions" \
+    -H "Content-Type: application/json" \
+    "${AUTH_ARGS[@]}" \
+    -d '{"model":"auto-fastest","messages":[{"role":"user","content":"Reply with exactly: OK"}],"stream":false,"max_tokens":16}')
+
+SMOKE_CONTENT=$(echo "$SMOKE_RESPONSE" | jq -r '.choices[0].message.content // empty')
+
+if [ -n "$SMOKE_CONTENT" ]; then
+    echo "[start-ninerouter] Smoke test PASSED - received response from model"
+    echo "[start-ninerouter] Response preview: ${SMOKE_CONTENT:0:100}"
+else
+    echo "[start-ninerouter] Smoke test FAILED - no content in response"
+    echo "[start-ninerouter] Response: $SMOKE_RESPONSE"
+    exit 1
+fi
+
+echo "[start-ninerouter] 9Router configuration complete!"
+
+EOF
