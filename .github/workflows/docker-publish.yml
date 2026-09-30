@@ -320,7 +320,6 @@ jobs:
       - name: Mnemon Integration Test
         run: |
           set -euo pipefail
-          sleep 120
           CONTAINER_NAME="hermes-webtop"
           TEST_NAME="ci-mnemon-$(date +%s)-$$"
           echo "=== Mnemon Integration Test: $TEST_NAME ==="
