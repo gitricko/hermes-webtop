@@ -92,12 +92,12 @@ echo "[start-ninerouter] Combo auto-fastest created successfully"
 
 # 5) set round-robin fallback strategy
 # 6) PATCH settings with comboStrategies
-echo "[start-ninerouter] Setting round-robin fallback strategy via comboStrategies..."
-curl -s -X PATCH "$BASE_URL/api/settings" \
-    -H "Content-Type: application/json" \
-    "${AUTH_ARGS[@]}" \
-    -d '{"comboStrategies":{"fallback":"round-robin"}}' > /dev/null
-echo "[start-ninerouter] comboStrategies.fallback set to round-robin"
+# echo "[start-ninerouter] Setting round-robin fallback strategy via comboStrategies..."
+# curl -s -X PATCH "$BASE_URL/api/settings" \
+#     -H "Content-Type: application/json" \
+#     "${AUTH_ARGS[@]}" \
+#     -d '{"comboStrategies":{"fallback":"round-robin"}}' > /dev/null
+# echo "[start-ninerouter] comboStrategies.fallback set to round-robin"
 
 # 7) smoke test via /v1/chat/completions
 echo "[start-ninerouter] Running smoke test via /v1/chat/completions..."
