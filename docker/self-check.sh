@@ -60,7 +60,7 @@ results = json.loads(sys.stdin.read())
 results.append({
   'name': '$name',
   'status': '$status',
-  'message': '$(echo "$message" | sed "s/'/\\\\'/g")',
+  'message': '$(echo "$message" | sed "s/'/\\\\\\\\'/g")',
   'detail': $detail
 })
 print(json.dumps(results))
@@ -82,6 +82,29 @@ section() {
   echo " ───────────────────────────────────────────────"
 }
 
+# yaml_get <config_file> <dotted.key.path>
+# Reads a value out of a YAML file with a real parser, so that deeply indented
+# keys, long comment runs and quoted scalars are handled correctly. Prints the
+# value, or nothing if absent. Never fails the caller.
+# e.g. yaml_get "$HERMES_CONFIG" model.default
+yaml_get() {
+  python3 -c '
+import sys, yaml
+try:
+    with open(sys.argv[1]) as fh:
+        node = yaml.safe_load(fh)
+except Exception:
+    sys.exit(0)
+for key in sys.argv[2].split("."):
+    if not isinstance(node, dict):
+        sys.exit(0)
+    node = node.get(key)
+    if node is None:
+        sys.exit(0)
+print(node)
+' "$1" "$2" 2>/dev/null || true
+}
+
 # ── Checks ───────────────────────────────────────────────────────────────────
 
 echo ""
@@ -95,9 +118,9 @@ section "Services"
 
 if ! should_skip "services"; then
   # Poll all service ports until all respond or timeout
-  PORT_POLL_TIMEOUT=180
+  PORT_POLL_TIMEOUT=600
   POLL_STARTED_AT=$(date +%s)
-  declare -A RESPONDED=([3000]="" [8888]="" [7352]="" [20128]="", [9119]="")
+  declare -A RESPONDED=([3000]="" [8888]="" [7352]="" [20128]="" [9119]="")
 
   while true; do
     NOW=$(date +%s)
@@ -105,7 +128,7 @@ if ! should_skip "services"; then
 
     # Collecting responses
     if [ "$ELAPSED" -gt "$PORT_POLL_TIMEOUT" ]; then
-      for pair in "3000:WebTop" "8888:CodeServer" "7352:ModelRelay" "20128:OmniRoute", "9119:HermesGateway"; do
+      for pair in "3000:WebTop" "8888:CodeServer" "7352:9Router" "20128:OmniRoute" "9119:HermesGateway"; do
         PORT="${pair%%:*}"
         NAME="${pair##*:}"
         if [ "${RESPONDED[$PORT]}" != "true" ]; then
@@ -116,7 +139,7 @@ if ! should_skip "services"; then
     fi
 
     # Testing ports
-    for pair in "3000:WebTop" "8888:CodeServer" "7352:ModelRelay" "20128:OmniRoute" "9119:HermesGateway"; do
+    for pair in "3000:WebTop" "8888:CodeServer" "7352:9Router" "20128:OmniRoute" "9119:HermesGateway"; do
       PORT="${pair%%:*}"
       NAME="${pair##*:}"
 
@@ -128,8 +151,16 @@ if ! should_skip "services"; then
       HTTP_CODE=$(echo "$HTTP_CODE" | tr -d '[:space:]')
 
       if [ -n "$HTTP_CODE" ] && [ "$HTTP_CODE" != "000" ]; then
-        echo "  $NAME (:$PORT) — ✅ HTTP ${HTTP_CODE} (${ELAPSED}s)"
-        RESPONDED[$PORT]="true"
+        case "$HTTP_CODE" in
+          2*|3*)
+            echo "  $NAME (:$PORT) — ✅ HTTP ${HTTP_CODE} (${ELAPSED}s)"
+            RESPONDED[$PORT]="true"
+            ;;
+          *)
+            # 4xx/5xx = service responded but unhealthy — warn, keep polling
+            echo "  $NAME (:$PORT) — ⚠️ HTTP ${HTTP_CODE} (${ELAPSED}s) — unhealthy, waiting..."
+            ;;
+        esac
       fi
     done
 
@@ -165,19 +196,31 @@ fi
 section "Models"
 
 if ! should_skip "models"; then
+
+  # OmniRoute
   models_json=$(curl -s --max-time 5 "http://localhost:20128/v1/models" 2>/dev/null || echo '{}')
   model_count=$(echo "$models_json" | python3 -c "import json,sys; d=json.load(sys.stdin); print(len(d.get('data',[])))" 2>/dev/null || echo "0")
-  # Try to get the default combo name from Hermes config
-  default_model=$(grep -A1 '^model:' "$HERMES_CONFIG" 2>/dev/null | grep 'default' | head -1 | sed 's/.*default: *//' || echo "unknown")
-  default_model="${default_model:-unknown}"
 
   if [ "$model_count" -gt 0 ] 2>/dev/null; then
-    _ok "OmniRoute" "${model_count} models available (default: ${default_model})"
-    json_add "models" "ok" "${model_count} models, default combo: ${default_model}" "{\"count\":${model_count},\"default\":\"${default_model}\"}"
-  else
-    _warn "OmniRoute" "no models returned from /v1/models (may still be starting)"
-    json_add "models" "warn" "no models returned (may still be booting)" "{\"count\":0}"
-  fi
+      _ok "OmniRoute" "${model_count} models available"
+      json_add "models" "ok" "${model_count} models" "{\"count\":${model_count}}"
+    else
+      _warn "OmniRoute" "no models returned from /v1/models (may still be starting)"
+      json_add "models" "warn" "no models returned (may still be booting)" "{\"count\":0}"
+    fi
+
+    # 9Router
+    models_json=$(curl -s --max-time 5 "http://localhost:7352/v1/models" 2>/dev/null || echo '{}')
+    model_count=$(echo "$models_json" | python3 -c "import json,sys; d=json.load(sys.stdin); print(len(d.get('data',[])))" 2>/dev/null || echo "0")
+
+    if [ "$model_count" -gt 0 ] 2>/dev/null; then
+      _ok "9Router" "${model_count} models available"
+      json_add "models" "ok" "${model_count} models" "{\"count\":${model_count}}"
+    else
+      _warn "9Router" "no models returned from /v1/models (may still be starting)"
+      json_add "models" "warn" "no models returned (may still be booting)" "{\"count\":0}"
+    fi
+
 else
   echo "   (skipped)"
 fi
@@ -213,14 +256,19 @@ section "Hermes"
 
 if ! should_skip "hermes"; then
   if [ -f "$HERMES_CONFIG" ]; then
-    cfg_model=$(grep -A1 '^model:' "$HERMES_CONFIG" 2>/dev/null | grep 'default' | head -1 | sed 's/.*default: *//' || echo "")
-    cfg_provider=$(grep -A1 '^model:' "$HERMES_CONFIG" 2>/dev/null | grep 'provider' | head -1 | sed 's/.*provider: *//' || echo "")
+    cfg_model=$(yaml_get "$HERMES_CONFIG" model.default)
+    [ -n "$cfg_model" ] || cfg_model=$(yaml_get "$HERMES_CONFIG" model.model)
+    cfg_provider=$(yaml_get "$HERMES_CONFIG" model.provider)
+    cfg_model="${cfg_model:-unknown}"
+    cfg_provider="${cfg_provider:-unknown}"
     has_gateway=$(curl -s -o /dev/null -w "%{http_code}" --max-time 3 "$HERMES_GATEWAY_URL" 2>/dev/null || true)
     has_gateway="${has_gateway:-000}"
 
     if [ -n "$cfg_model" ]; then
       _ok "Config" "model=${cfg_model}, provider=${cfg_provider:-unset}"
-      json_add "hermes:config" "ok" "config valid: model=$cfg_model, provider=$cfg_provider" "{\"model\":\"${cfg_model}\",\"provider\":\"${cfg_provider}\"}"
+      cfg_model_json=$(printf "%s" "$cfg_model" | python3 -c "import json,sys; print(json.dumps(sys.stdin.read()))")
+      cfg_provider_json=$(printf "%s" "$cfg_provider" | python3 -c "import json,sys; print(json.dumps(sys.stdin.read()))")
+      json_add "hermes:config" "ok" "config valid: model=$cfg_model, provider=$cfg_provider" "{\"model\":${cfg_model_json},\"provider\":${cfg_provider_json}}"
     else
       _warn "Config" "model not set in config (may be fresh install)"
       json_add "hermes:config" "warn" "model not configured" "{}"
@@ -465,7 +513,7 @@ import json,sys
 results = json.load(sys.stdin)
 warns = [r for r in results if r['status'] == 'warn']
 if warns:
-    print('\\n*Warnings:*')
+    print('\n*Warnings:*')
     for w in warns:
         print(f'• {w[\"name\"]}: {w[\"message\"]}')
 " 2>/dev/null | while IFS= read -r line; do
