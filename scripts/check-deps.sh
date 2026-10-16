@@ -31,7 +31,7 @@ npm_latest() {  # $1 = npm package name
 }
 
 gh_latest() {  # $1 = owner/repo -> newest stable tag (rc/beta/alpha/dev excluded, leading v stripped)
-    curl -s "https://api.github.com/repos/$1/tags" \
+    curl -sL "https://api.github.com/repos/$1/tags" \
         | python3 -c "
 import json,sys,re
 d = json.load(sys.stdin)
@@ -79,4 +79,4 @@ check "node"            "${NODE_VERSION}"         "$(node_latest "${NODE_VERSION
 check "ollama"          "${OLLAMA_VERSION}"       "$(gh_latest ollama/ollama)"
 check "code-server"     "${CODE_SERVER_VERSION}"  "$(gh_latest coder/code-server)"
 check "mnemon"          "${MNEMON_VERSION}"       "$(gh_latest mnemon-dev/mnemon)"
-check "herdr"           "${HERDR_VERSION}"        "$(gh_latest ogulcancelik/herdr)"
+check "herdr"           "${HERDR_VERSION}"        "$(gh_latest herdrdev/herdr)"

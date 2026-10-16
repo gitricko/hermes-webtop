@@ -8,7 +8,9 @@
 # Usage:
 #   fm-install-herdr.sh <destination-directory>
 #
-# Pins Herdr v0.7.4 (protocol 16), the suite-verified protocol-16 release.
+# Pins Herdr v0.9.5 (client protocol 22), the current stable release; the
+# protocol floor stays 16. Re-verified for this bump: linux-x86_64 asset
+# sha256'd locally, all four digests match GitHub's official asset digests.
 # Selects the official GitHub Releases asset for the host OS/arch, downloads
 # with a bounded max size, verifies SHA-256 before install, then refuses to
 # finish unless the binary reports the exact pin version and a client protocol
@@ -16,12 +18,12 @@
 set -eu
 
 # Exact pin - change only with a re-verified real-Herdr matrix.
-FM_HERDR_CI_VERSION=0.7.4
+FM_HERDR_CI_VERSION=0.9.5
 FM_HERDR_CI_TAG="v${FM_HERDR_CI_VERSION}"
 FM_HERDR_CI_MIN_PROTOCOL=16
-# Bounded download ceiling (bytes). The largest official 0.7.4 asset is under 20 MiB.
-FM_HERDR_CI_MAX_BYTES=25000000
-FM_HERDR_CI_REPO=ogulcancelik/herdr
+# Bounded download ceiling (bytes). The largest official 0.9.5 asset is 30,285,672 bytes (~29 MiB).
+FM_HERDR_CI_MAX_BYTES=40000000
+FM_HERDR_CI_REPO=herdrdev/herdr
 
 die() {
   printf 'fm-install-herdr.sh: %s\n' "$*" >&2
@@ -35,19 +37,19 @@ arch=$(uname -m)
 case "${os}-${arch}" in
   Linux-x86_64)
     ASSET=herdr-linux-x86_64
-    SHA256=bc0fc02d4ba500f9cac2353a43e67fe036785ecca6eb55378e050fac3c103059
+    SHA256=14d9e8bc8b4a9e0118d77c32266f76d461f09b40342eb23752960bd89f59929d
     ;;
   Linux-aarch64|Linux-arm64)
     ASSET=herdr-linux-aarch64
-    SHA256=544e0002de42806d1ab64ccdef3a7e7414f24717b0b6b022bc9e57d2eefd26a2
+    SHA256=17d7536f2da50859523680ef279dffcac8e4a235f4e46fe8da6c2ec44141897c
     ;;
   Darwin-arm64)
     ASSET=herdr-macos-aarch64
-    SHA256=24992e1625dbdcb18354a59e299e4b263c312400b31396cdc07cd46ed57f24a7
+    SHA256=fb77c2232a05a8035421382c894392f4174e4e38a18e48af3dd0290157c3a7e2
     ;;
   Darwin-x86_64)
     ASSET=herdr-macos-x86_64
-    SHA256=ddf430133352e1712413d5d865b34a485546f4658893fc89986257d65a7585a8
+    SHA256=5fb0a908ec7f6745e3e245738b06bfad56c46391c391ab3c0955fbead01f1369
     ;;
   *)
     die "unsupported platform ${os}-${arch}; official Herdr assets are linux/macos x86_64 and aarch64"
