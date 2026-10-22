@@ -96,3 +96,6 @@ restore:
 
 docker-build:
 	docker build -t $(DOCKER_IMAGE_NAME)  -f ./docker/Dockerfile ./docker
+
+check-deps:
+	./scripts/check-deps.sh
