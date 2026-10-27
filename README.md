@@ -27,10 +27,10 @@ _Run Hermes-Agent inside a browser-based VSCode + Linux desktop with free LLM su
     <img src="https://img.shields.io/badge/9Router-0.5.111-green?logo=npm" alt="9Router version">
   </a>
   <a href="https://github.com/ollama/ollama">
-    <img src="https://img.shields.io/badge/Ollama-0.40.11-yellow?logo=ollama" alt="Ollama version">
+    <img src="https://img.shields.io/badge/Ollama-0.40.12-yellow?logo=ollama" alt="Ollama version">
   </a>
   <a href="https://github.com/mnemon-dev/mnemon">
-    <img src="https://img.shields.io/badge/Mnemon-0.2.12-pink?logo=github" alt="Mnemon version">
+    <img src="https://img.shields.io/badge/Mnemon-0.2.13-pink?logo=github" alt="Mnemon version">
   </a>
   <a href="https://nodejs.org">
     <img src="https://img.shields.io/badge/Node.js-26.12.1-brightgreen?logo=node.js" alt="Node.js version">
