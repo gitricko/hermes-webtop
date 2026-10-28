@@ -26,7 +26,7 @@ ensure_ownership "/usr/local/lib/node_modules/omniroute" &
 # Start OmniRoute
 echo "[start-omniroute] Starting OmniRoute..."
 export REDIS_URL=""
-export OMNIROUTE_DIRECT_HEADERS_TIMEOUT_MS=300000
+export OMNIROUTE_FETCH_START_TIMEOUT_CAP_MS=300000
 nohup omniroute serve --no-open --log > /tmp/omniroute.log 2>&1 &
 
 if [ "$INIT_OMNIROUTE" -eq "1" ]; then

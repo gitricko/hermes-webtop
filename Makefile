@@ -99,3 +99,7 @@ docker-build:
 
 check-deps:
 	./scripts/check-deps.sh
+
+check-deps-fix:
+	./scripts/check-deps.sh --fix
+

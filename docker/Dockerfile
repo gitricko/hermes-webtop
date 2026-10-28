@@ -1,11 +1,11 @@
 ARG HERMES_VERSION=2026.9.24
 ARG OMNIROUTE_VERSION=3.8.52
-ARG NINEROUTER_VERSION=0.5.104
-ARG OLLAMA_VERSION=0.40.8
+ARG NINEROUTER_VERSION=0.5.111
+ARG OLLAMA_VERSION=0.40.12
 ARG NODE_VERSION=26.12.1
-ARG CODE_SERVER_VERSION=4.141.0
+ARG CODE_SERVER_VERSION=4.143.1
 ARG PI_VERSION=1.4.0
-ARG MNEMON_VERSION=0.2.12
+ARG MNEMON_VERSION=0.2.13
 ARG HERDR_VERSION=0.9.5
 ARG TARGETARCH
 
@@ -63,6 +63,9 @@ RUN curl --retry 5 --retry-delay 10 --retry-connrefused --retry-all-errors -fsSL
     npm cache clean --force
 
 # Install 9Router and start automatically in the background
+# Remove this later ---
+RUN npm install -g "wreq-js@^3.2.0" "playwright-core@^1.62.1" 
+# Remove this later ---
 ARG NINEROUTER_VERSION
 RUN npm install -g 9router@${NINEROUTER_VERSION} && \
     npm cache clean --force
