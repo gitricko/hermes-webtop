@@ -156,13 +156,13 @@ jobs:
           docker compose logs --no-color > /tmp/boot-logs/docker-compose.log 2>&1 || true
 
           # Service logs (/tmp/*.log: 9router, 9router-config, omniroute, etc.)
-          docker exec "$CONTAINER_NAME" sh -c 'cd /tmp && tar cf - *.log' 2>/dev/null | tar xf - -C /tmp/boot-logs/ || true
+          docker exec -u abc "$CONTAINER_NAME" sh -c 'cd /tmp && tar cf - *.log' 2>/dev/null | tar xf - -C /tmp/boot-logs/ || true
 
           # Hermes service logs
-          docker exec "$CONTAINER_NAME" sh -c 'cd $HOME/.hermes/logs && tar cf - *.log' 2>/dev/null | tar xf - -C /tmp/boot-logs/ || true
+          docker exec -u abc "$CONTAINER_NAME" sh -c 'cd $HOME/.hermes/logs && tar cf - *.log' 2>/dev/null | tar xf - -C /tmp/boot-logs/ || true
 
           # Hermes config
-          docker exec "$CONTAINER_NAME" sh -c 'cp $HOME/.hermes/config.yaml /tmp/boot-logs/ 2>/dev/null || true'
+          docker exec -u abc "$CONTAINER_NAME" sh -c 'cp $HOME/.hermes/config.yaml /tmp/boot-logs/ 2>/dev/null || true'
 
           ls -la /tmp/boot-logs/
 
