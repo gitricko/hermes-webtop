@@ -159,10 +159,10 @@ jobs:
           docker exec -u abc "$CONTAINER_NAME" sh -c 'cd /tmp && tar cf - *.log' 2>/dev/null | tar xf - -C /tmp/boot-logs/ || true
 
           # Hermes service logs
-          docker exec -u abc "$CONTAINER_NAME" sh -c 'cd $HOME/.hermes/logs && tar cf - *.log' 2>/dev/null | tar xf - -C /tmp/boot-logs/ || true
+          docker exec -u abc "$CONTAINER_NAME" sh -c 'cd /config/.hermes/logs && tar cf - *.log' 2>/dev/null | tar xf - -C /tmp/boot-logs/ || true
 
           # Hermes config
-          docker exec -u abc "$CONTAINER_NAME" sh -c 'cp $HOME/.hermes/config.yaml /tmp/boot-logs/ 2>/dev/null || true'
+          docker exec -u abc "$CONTAINER_NAME" sh -c 'cp /config/.hermes/config.yaml /tmp/boot-logs/ 2>/dev/null || true'
 
           ls -la /tmp/boot-logs/
 
