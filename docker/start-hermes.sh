@@ -133,7 +133,11 @@ fi
 # 6. Start the gateway without double-starting or fighting the update fence.
 # ---------------------------------------------------------------------------
 gw_state="$(hermes gateway status 2>&1 || true)"
-if printf '%s' "${gw_state}" | grep -qi '"state":"running"\|Gateway is running\|running'; then
+# NOTE: match ONLY the positive markers. The old bare "running" alternative
+# matched the "Gateway is NOT running" line the CLI prints when stopped,
+# so the gateway was never started on a fresh container (regression —
+# see CI run 40903091557 / PR #61).
+if printf '%s' "${gw_state}" | grep -q 'Gateway is running\|"state":"running"\|✓ Gateway'; then
   echo "[start-hermes] gateway already running, leaving it alone"
 elif printf '%s' "${gw_state}" | grep -qi 'update_paused'; then
   echo "[start-hermes] gateway fenced by an in-progress update (update_paused)."
