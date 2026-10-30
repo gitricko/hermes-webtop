@@ -36,7 +36,7 @@ _Run Hermes-Agent inside a browser-based VSCode + Linux desktop with free LLM su
     <img src="https://img.shields.io/badge/Node.js-26.13.0-brightgreen?logo=node.js" alt="Node.js version">
   </a>
   <a href="https://github.com/coder/code-server">
-    <img src="https://img.shields.io/badge/Code%20Server-4.143.1-blue?logo=code" alt="Code Server version">
+    <img src="https://img.shields.io/badge/Code%20Server-4.144.0-blue?logo=code" alt="Code Server version">
   </a>
   <a href="https://github.com/herdrdev/herdr">
     <img src="https://img.shields.io/badge/herdr-0.9.5-red?logo=terminal" alt="herdr version">
