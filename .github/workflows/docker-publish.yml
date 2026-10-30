@@ -161,8 +161,8 @@ jobs:
           # Hermes service logs
           docker exec -u abc "$CONTAINER_NAME" sh -c 'cd /config/.hermes/logs && tar cf - *.log' 2>/dev/null | tar xf - -C /tmp/boot-logs/ || true
 
-          # Hermes config
-          docker exec -u abc "$CONTAINER_NAME" sh -c 'cp /config/.hermes/config.yaml /tmp/boot-logs/ 2>/dev/null || true'
+          # Hermes config (cat to host: the copy must land in the HOST dir, not the container)
+          docker exec -u abc "$CONTAINER_NAME" sh -c 'cat /config/.hermes/config.yaml 2>/dev/null' > /tmp/boot-logs/config.yaml || true
 
           ls -la /tmp/boot-logs/
 
@@ -360,8 +360,8 @@ jobs:
           # Hermes service logs
           docker exec "$CONTAINER_NAME" sh -c 'cd $HOME/.hermes/logs && tar cf - *.log' 2>/dev/null | tar xf - -C /tmp/boot-logs/ || true
 
-          # Hermes config
-          docker exec "$CONTAINER_NAME" sh -c 'cp $HOME/.hermes/config.yaml /tmp/boot-logs/ 2>/dev/null || true'
+          # Hermes config (cat to host: the copy must land in the HOST dir, not the container)
+          docker exec "$CONTAINER_NAME" sh -c 'cat $HOME/.hermes/config.yaml 2>/dev/null' > /tmp/boot-logs/config.yaml || true
 
           ls -la /tmp/boot-logs/
 
