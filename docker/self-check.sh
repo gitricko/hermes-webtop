@@ -275,8 +275,22 @@ if ! should_skip "hermes"; then
     fi
 
     if [ "$has_gateway" != "000" ]; then
-      _ok "Gateway" "HTTP ${has_gateway} at ${HERMES_GATEWAY_URL}"
-      json_add "hermes:gateway" "ok" "gateway responded HTTP ${has_gateway}" "{\"http_code\":${has_gateway}}"
+      # 9119 is fronted by socat→9009, so BOTH the dashboard and the gateway
+      # answer "200". HTTP 200 alone cannot prove the gateway is up (PR #61
+      # regression: gateway never started, self-check still passed — CI
+      # run 40903091557). Corroborate with `hermes gateway status` when the
+      # CLI is present; demote to warning (not hard fail) if it is not.
+      gw_cli_state=$(timeout 15 hermes gateway status 2>/dev/null || true)
+      if printf '%s' "${gw_cli_state}" | grep -q 'Gateway is running\|"state":"running"\|✓ Gateway'; then
+        _ok "Gateway" "HTTP ${has_gateway} at ${HERMES_GATEWAY_URL} + gateway process running"
+        json_add "hermes:gateway" "ok" "gateway running" "{\"http_code\":${has_gateway},\"process\":\"running\"}"
+      elif printf '%s' "${gw_cli_state}" | grep -q 'Gateway is not running'; then
+        _fail "Gateway" "HTTP ${has_gateway} at ${HERMES_GATEWAY_URL} but gateway process is NOT running (dashboard-only 200)"
+        json_add "hermes:gateway" "fail" "gateway process not running behind ${HERMES_GATEWAY_URL}" "{}"
+      else
+        _warn "Gateway" "HTTP ${has_gateway} at ${HERMES_GATEWAY_URL}; gateway status check inconclusive"
+        json_add "hermes:gateway" "warn" "gateway status unverifiable" "{\"http_code\":${has_gateway}}"
+      fi
     else
       _fail "Gateway" "no response from ${HERMES_GATEWAY_URL}"
       json_add "hermes:gateway" "fail" "gateway unreachable" "{}"

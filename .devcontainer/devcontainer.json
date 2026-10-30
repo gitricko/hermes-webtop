@@ -1,5 +1,5 @@
 {
-  "name": "Hermes-Coding-Agent",
+  "name": "hermes-webtop",
   "customizations": {
     "vscode": {
       "extensions": ["joaompfp.hermes-ai-agent"]

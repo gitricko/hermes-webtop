@@ -24,19 +24,19 @@ _Run Hermes-Agent inside a browser-based VSCode + Linux desktop with free LLM su
     <img src="https://img.shields.io/badge/OmniRoute-3.8.52-orange?logo=npm" alt="OmniRoute version">
   </a>
   <a href="https://www.npmjs.com/package/9router">
-    <img src="https://img.shields.io/badge/9Router-0.5.111-green?logo=npm" alt="9Router version">
+    <img src="https://img.shields.io/badge/9Router-0.5.112-green?logo=npm" alt="9Router version">
   </a>
   <a href="https://github.com/ollama/ollama">
-    <img src="https://img.shields.io/badge/Ollama-0.40.12-yellow?logo=ollama" alt="Ollama version">
+    <img src="https://img.shields.io/badge/Ollama-0.40.13-yellow?logo=ollama" alt="Ollama version">
   </a>
   <a href="https://github.com/mnemon-dev/mnemon">
     <img src="https://img.shields.io/badge/Mnemon-0.2.13-pink?logo=github" alt="Mnemon version">
   </a>
   <a href="https://nodejs.org">
-    <img src="https://img.shields.io/badge/Node.js-26.12.1-brightgreen?logo=node.js" alt="Node.js version">
+    <img src="https://img.shields.io/badge/Node.js-26.13.0-brightgreen?logo=node.js" alt="Node.js version">
   </a>
   <a href="https://github.com/coder/code-server">
-    <img src="https://img.shields.io/badge/Code%20Server-4.143.1-blue?logo=code" alt="Code Server version">
+    <img src="https://img.shields.io/badge/Code%20Server-4.144.0-blue?logo=code" alt="Code Server version">
   </a>
   <a href="https://github.com/herdrdev/herdr">
     <img src="https://img.shields.io/badge/herdr-0.9.5-red?logo=terminal" alt="herdr version">
