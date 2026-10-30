@@ -79,6 +79,16 @@ jobs:
             sleep 10
           done
 
+          # Configure the CI model combo BEFORE any hermes-based test runs, so
+          # self-check's Config line and the Mnemon test both exercise the
+          # provider CI is verifying (image ships the upstream template:
+          # model.default=anthropic/claude-opus-4.6, provider=auto).
+          echo "=== Configuring hermes model combo for CI ==="
+          docker exec -u abc "$CONTAINER_NAME" hermes config set model.default auto-fastest
+          docker exec -u abc "$CONTAINER_NAME" hermes config set model.provider 9router
+          echo "model.default=$(docker exec -u abc "$CONTAINER_NAME" hermes config get model.default)"
+          echo "model.provider=$(docker exec -u abc "$CONTAINER_NAME" hermes config get model.provider)"
+
           # Run self-check (it has its own 120s polling loop for all ports)
           echo "=== Running boot-time self-check validation ==="
           # Execute the self-check script inside the container.
@@ -117,6 +127,7 @@ jobs:
             echo "PASS: Docker image smoke test passed."
             exit 0
           fi         
+
 
       - name: Mnemon Integration Test
         run: |
@@ -277,6 +288,16 @@ jobs:
             fi
             sleep 10
           done
+
+          # Configure the CI model combo BEFORE any hermes-based test runs, so
+          # self-check's Config line and the Mnemon test both exercise the
+          # provider CI is verifying (image ships the upstream template:
+          # model.default=anthropic/claude-opus-4.6, provider=auto).
+          echo "=== Configuring hermes model combo for CI ==="
+          docker exec -u abc "$CONTAINER_NAME" hermes config set model.default auto-fastest
+          docker exec -u abc "$CONTAINER_NAME" hermes config set model.provider 9router
+          echo "model.default=$(docker exec -u abc "$CONTAINER_NAME" hermes config get model.default)"
+          echo "model.provider=$(docker exec -u abc "$CONTAINER_NAME" hermes config get model.provider)"
 
           # Run self-check (it has its own 120s polling loop for all ports)
           echo "=== Running boot-time self-check validation ==="
