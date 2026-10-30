@@ -46,46 +46,54 @@ cd "${HOME}" || cd /
 mkdir -p "${HERMES_HOME}/logs"
 
 # ---------------------------------------------------------------------------
-# 3. Idempotent config: only set keys that are actually missing.
+# 3. Fresh-install detection + config seeding.
+#
+# set_if_missing is a trap, not a fix: `hermes config get <key>` always
+# succeeds and returns the *effective* value, i.e. whatever is in config.yaml
+# OR the vendor built-in default. On a fresh volume config.yaml *is* the stock
+# auto-generated template (hermes generates it from its own defaults), so every
+# key "already exists" and nothing would ever be written. So gate on a real
+# fresh-install signal instead: hermes has never booted here (empty logs dir)
+# => the config is still the unmodified stock template => safe to apply our
+# full block unconditionally. Returning users keep their customizations.
 # ---------------------------------------------------------------------------
-set_if_missing() {
-  local key="$1" value="$2"
-  if ! hermes config get "${key}" >/dev/null 2>&1; then
-    hermes config set "${key}" "${value}" || echo "[start-hermes] WARNING: failed to set ${key}=${value}"
-  fi
-}
-
-if [ -d "${HERMES_HOME}/logs" ] && [ -z "$(ls -A "${HERMES_HOME}/logs" 2>/dev/null)" ]; then
-  echo "[start-hermes] first run detected, applying default config..."
+FRESH_LOGS_DIR="${HERMES_HOME}/logs"
+FRESH_INSTALL=false
+if [ -d "${FRESH_LOGS_DIR}" ] && [ -z "$(ls -A "${FRESH_LOGS_DIR}" 2>/dev/null)" ]; then
+  FRESH_INSTALL="true"
 fi
 
-while IFS='|' read -r key value; do
-  [[ -z "${key}" ]] && continue
-  set_if_missing "${key}" "${value}"
-done <<'CFG'
-terminal.cwd|${PWD}
-display.busy_input_mode|steer
-model.default|auto-fastest
-model.provider|omniroute
-providers.omniroute.base_url|http://localhost:20128/v1
-providers.omniroute.api_key|no-key-needed
-providers.9router.base_url|http://localhost:7352/v1
-providers.9router.api_key|no-key-needed
-fallback_providers.provider|9router
-fallback_providers.model|auto-fastest
-auxiliary.title_generation.model|auto-fastest
-auxiliary.title_generation.provider|9router
-auxiliary.vision.model|auto-fastest
-auxiliary.vision.provider|9router
-auxiliary.compression.model|auto-fastest
-auxiliary.compression.provider|9router
-approvals.mode|off
-memory.memory_enabled|true
-memory.user_profile_enabled|true
-memory.provider|mnemon
-agent.max_turns|120
-kanban.failure_limit|3
-CFG
+if [ "${FRESH_INSTALL}" = "true" ]; then
+  echo "[start-hermes] fresh install detected (empty ${FRESH_LOGS_DIR}); applying full default config..."
+  apply_config() {
+    hermes config set "$1" "$2" || echo "[start-hermes] WARNING: failed to set $1=$2"
+  }
+  apply_config "terminal.cwd" "${PWD}"
+  apply_config "display.busy_input_mode" "steer"
+  apply_config "model.default" "auto-fastest"
+  apply_config "model.provider" "omniroute"
+  apply_config "providers.omniroute.base_url" "http://localhost:20128/v1"
+  apply_config "providers.omniroute.api_key" "no-key-needed"
+  apply_config "providers.9router.base_url" "http://localhost:7352/v1"
+  apply_config "providers.9router.api_key" "no-key-needed"
+  apply_config "fallback_providers.provider" "9router"
+  apply_config "fallback_providers.model" "auto-fastest"
+  apply_config "auxiliary.title_generation.model" "auto-fastest"
+  apply_config "auxiliary.title_generation.provider" "9router"
+  apply_config "auxiliary.vision.model" "auto-fastest"
+  apply_config "auxiliary.vision.provider" "9router"
+  apply_config "auxiliary.compression.model" "auto-fastest"
+  apply_config "auxiliary.compression.provider" "9router"
+  apply_config "approvals.mode" "off"
+  apply_config "memory.memory_enabled" "true"
+  apply_config "memory.user_profile_enabled" "true"
+  apply_config "memory.provider" "mnemon"
+  apply_config "agent.max_turns" "120"
+  apply_config "kanban.failure_limit" "3"
+  echo "[start-hermes] config defaults applied."
+else
+  echo "[start-hermes] returning install detected (${FRESH_LOGS_DIR} non-empty); preserving existing config."
+fi
 
 # First-run seeding of skill + .hermes.md (only if missing)
 if [ ! -f "${HOME}/.hermes/skills/memory-automation/SKILL.md" ]; then
