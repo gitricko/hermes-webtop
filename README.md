@@ -18,7 +18,7 @@ _Run Hermes-Agent inside a browser-based VSCode + Linux desktop with free LLM su
     <img src="https://img.shields.io/badge/Hermes%20Agent-2026.9.24-purple?logo=github" alt="Hermes Agent version">
   </a>
   <a href="https://pi.dev">
-    <img src="https://img.shields.io/badge/PI%20Agent-1.4.0-brown?logo=github" alt="PI Agent version">
+    <img src="https://img.shields.io/badge/PI%20Agent-1.5.0-brown?logo=github" alt="PI Agent version">
   </a>
   <a href="https://www.npmjs.com/package/omniroute">
     <img src="https://img.shields.io/badge/OmniRoute-3.8.52-orange?logo=npm" alt="OmniRoute version">
