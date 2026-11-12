@@ -91,9 +91,12 @@ jobs:
           # echo "model.default=$(docker exec -u abc "$CONTAINER_NAME" hermes config get model.default)"
           # echo "model.provider=$(docker exec -u abc "$CONTAINER_NAME" hermes config get model.provider)"
 
-          # Verify boot actually applied our config (regression class of run 43261010629:
-          # the fresh-install gate misfired, skipped the block, and CI still passed).
-          # No side-channel marker file needed — the config content itself is the signal.
+          # Verify boot actually applied our config — regression class of run
+          # 43261010629 (config block silently skipped, CI still green).
+          # The booted config content IS the check: grep the two base_url
+          # literals our seeding block writes (both absent from stock,
+          # single-line => greppable; dotted keys like auxiliary.vision are
+          # nested YAML and never appear as one line), plus the provider.
           echo "=== Verifying applied config (webtop keys present in config.yaml) ==="
           # two single-line literals our block writes (both stock-absent); dotted
           # keys like auxiliary.vision do NOT appear as literals — nested YAML.
@@ -316,9 +319,12 @@ jobs:
           # echo "model.default=$(docker exec -u abc "$CONTAINER_NAME" hermes config get model.default)"
           # echo "model.provider=$(docker exec -u abc "$CONTAINER_NAME" hermes config get model.provider)"
 
-          # Verify boot actually applied our config (regression class of run 43261010629:
-          # the fresh-install gate misfired, skipped the block, and CI still passed).
-          # No side-channel marker file needed — the config content itself is the signal.
+          # Verify boot actually applied our config — regression class of run
+          # 43261010629 (config block silently skipped, CI still green).
+          # The booted config content IS the check: grep the two base_url
+          # literals our seeding block writes (both absent from stock,
+          # single-line => greppable; dotted keys like auxiliary.vision are
+          # nested YAML and never appear as one line), plus the provider.
           echo "=== Verifying applied config (webtop keys present in config.yaml) ==="
           # two single-line literals our block writes (both stock-absent); dotted
           # keys like auxiliary.vision do NOT appear as literals — nested YAML.

@@ -73,7 +73,8 @@ RUN test -x /usr/local/lib/hermes-agent/.hermes/bin/hermes || \
 # single "untouched template" reference for whichever Hermes version is baked in
 # beside it. Baked into the same image layer as the install => always matches the
 # installed version; an upgrade image carries its own baseline. Used at runtime
-# to classify config.yaml as stock vs user-customized.
+# to corroborate "config.yaml is the untouched template" (primary decision is
+# the webtop markers — see docker/start-hermes.sh).
 RUN mkdir -p /usr/local/share/hermes-webtop && \
     sha256sum /usr/local/lib/hermes-agent/cli-config.yaml.example \
     | cut -d' ' -f1 > /usr/local/share/hermes-webtop/stock-config.sha256
