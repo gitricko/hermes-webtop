@@ -56,11 +56,13 @@ ENV HERMES_HOME=/config/.hermes
 RUN curl --retry 5 --retry-delay 10 --retry-connrefused --retry-all-errors -fsSL \
     "https://raw.githubusercontent.com/NousResearch/hermes-agent/v${HERMES_VERSION}/scripts/install.sh" \
     | bash -s -- --skip-setup --dir /usr/local/lib/hermes-agent || exit 1; \
-    rm -rf /var/lib/apt/lists/* && \
+# v0.23.x installer moved to pnpm-only (root preinstall refuses npm; no npm workspaces).
+# The installer already builds TUI + web UI; re-run the web build for a CI-deterministic artifact.
+RUN rm -rf /var/lib/apt/lists/* && \
     cd /usr/local/lib/hermes-agent && \
-    CI=1 npm ci --include=dev --workspace web --silent 2>&1 && \
-    CI=1 npm run build -w web --silent 2>&1 && \
-    npm cache clean --force
+    (command -v pnpm >/dev/null 2>&1 || npm install -g pnpm@12) && \
+    CI=1 pnpm install --frozen-lockfile --filter web... && \
+    CI=1 pnpm --filter web run build
 
 # Install 9Router and start automatically in the background
 # Remove this later ---
