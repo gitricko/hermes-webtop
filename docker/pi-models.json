@@ -25,7 +25,7 @@
       ],
       "fallback": {
         "chain": ["9router/auto-fastest"],
-        "timeoutMs": 30000,
+        "timeoutMs": 300000,
         "onlyPreFirstToken": true,
         "notifyOnSwitch": true
       }
@@ -55,7 +55,7 @@
       ],
       "fallback": {
         "chain": ["omniroute/auto-fastest"],
-        "timeoutMs": 30000,
+        "timeoutMs": 300000,
         "onlyPreFirstToken": true,
         "notifyOnSwitch": true
       }

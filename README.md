@@ -24,7 +24,7 @@ _Run Hermes-Agent inside a browser-based VSCode + Linux desktop with free LLM su
     <img src="https://img.shields.io/badge/OmniRoute-3.8.53-orange?logo=npm" alt="OmniRoute version">
   </a>
   <a href="https://www.npmjs.com/package/9router">
-    <img src="https://img.shields.io/badge/9Router-0.5.116-green?logo=npm" alt="9Router version">
+    <img src="https://img.shields.io/badge/9Router-0.5.119-green?logo=npm" alt="9Router version">
   </a>
   <a href="https://github.com/ollama/ollama">
     <img src="https://img.shields.io/badge/Ollama-0.40.16-yellow?logo=ollama" alt="Ollama version">

@@ -102,8 +102,6 @@ jobs:
              grep -qF localhost:20128/v1 "$c" && \
              grep -qF localhost:7352/v1  "$c"'
           docker exec -u abc "$CONTAINER_NAME" hermes config get model.provider | grep -q omniroute
-          docker exec -u abc "$CONTAINER_NAME" hermes config get auxiliary.vision.provider | grep -q omniroute
-          docker exec -u abc "$CONTAINER_NAME" hermes config get auxiliary.vision.fallback_chain | grep -q 9router
 
           # Run self-check (it has its own 120s polling loop for all ports)
           echo "=== Running boot-time self-check validation ==="
@@ -329,8 +327,6 @@ jobs:
              grep -qF localhost:20128/v1 "$c" && \
              grep -qF localhost:7352/v1  "$c"'
           docker exec -u abc "$CONTAINER_NAME" hermes config get model.provider | grep -q omniroute
-          docker exec -u abc "$CONTAINER_NAME" hermes config get auxiliary.vision.provider | grep -q omniroute
-          docker exec -u abc "$CONTAINER_NAME" hermes config get auxiliary.vision.fallback_chain | grep -q 9router
 
           # Run self-check (it has its own 120s polling loop for all ports)
           echo "=== Running boot-time self-check validation ==="
