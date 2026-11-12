@@ -82,12 +82,15 @@ mkdir -p "${HERMES_HOME}/logs"
 #     unconfigured by us; seed is idempotent) — never PRESERVE an unconfigured file.
 #   * webtop keys present + hash unexpectedly matches stock -> PRESERVE + WARN.
 #
-# The three webtop markers below are guaranteed absent from stock (see above)
-# and are written by the apply block, so they are perfect discriminators.
+# The two webtop markers below are guaranteed absent from stock (see above)
+# and are written by the apply block as single-line literals, so they are
+# perfect discriminators. (Do NOT use dotted-path literals like
+# auxiliary.vision: Hermes stores auxiliary as nested YAML — a dotted string
+# never appears in config.yaml, so such a marker would never match.)
 # ---------------------------------------------------------------------------
 CONFIG_FILE="${HERMES_HOME}/config.yaml"
 STOCK_HASH_FILE="/usr/local/share/hermes-webtop/stock-config.sha256"
-WEBTOP_MARKERS="localhost:20128/v1 localhost:7352/v1 auxiliary.vision"
+WEBTOP_MARKERS="localhost:20128/v1 localhost:7352/v1"
 
 should_seed=""
 may_warn=""

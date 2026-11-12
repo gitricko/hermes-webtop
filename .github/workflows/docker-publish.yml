@@ -95,11 +95,12 @@ jobs:
           # the fresh-install gate misfired, skipped the block, and CI still passed).
           # No side-channel marker file needed — the config content itself is the signal.
           echo "=== Verifying applied config (webtop keys present in config.yaml) ==="
+          # two single-line literals our block writes (both stock-absent); dotted
+          # keys like auxiliary.vision do NOT appear as literals — nested YAML.
           docker exec -u abc "$CONTAINER_NAME" sh -c \
             'c=/config/.hermes/config.yaml; \
              grep -qF localhost:20128/v1 "$c" && \
-             grep -qF localhost:7352/v1  "$c" && \
-             grep -qF auxiliary.vision   "$c"'
+             grep -qF localhost:7352/v1  "$c"'
           docker exec -u abc "$CONTAINER_NAME" hermes config get model.provider | grep -q omniroute
           docker exec -u abc "$CONTAINER_NAME" hermes config get auxiliary.vision.provider | grep -q omniroute
           docker exec -u abc "$CONTAINER_NAME" hermes config get auxiliary.vision.fallback_chain | grep -q 9router
@@ -321,11 +322,12 @@ jobs:
           # the fresh-install gate misfired, skipped the block, and CI still passed).
           # No side-channel marker file needed — the config content itself is the signal.
           echo "=== Verifying applied config (webtop keys present in config.yaml) ==="
+          # two single-line literals our block writes (both stock-absent); dotted
+          # keys like auxiliary.vision do NOT appear as literals — nested YAML.
           docker exec -u abc "$CONTAINER_NAME" sh -c \
             'c=/config/.hermes/config.yaml; \
              grep -qF localhost:20128/v1 "$c" && \
-             grep -qF localhost:7352/v1  "$c" && \
-             grep -qF auxiliary.vision   "$c"'
+             grep -qF localhost:7352/v1  "$c"'
           docker exec -u abc "$CONTAINER_NAME" hermes config get model.provider | grep -q omniroute
           docker exec -u abc "$CONTAINER_NAME" hermes config get auxiliary.vision.provider | grep -q omniroute
           docker exec -u abc "$CONTAINER_NAME" hermes config get auxiliary.vision.fallback_chain | grep -q 9router
