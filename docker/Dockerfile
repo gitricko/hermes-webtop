@@ -58,16 +58,10 @@ RUN curl --retry 5 --retry-delay 10 --retry-connrefused --retry-all-errors -fsSL
     | bash -s -- --skip-setup --dir /usr/local/lib/hermes-agent || exit 1; \
     rm -rf /var/lib/apt/lists/*
 
-# v0.23.x installer moved to pnpm-only (root preinstall refuses npm; no npm workspaces).
-# The root preinstall gate demands the EXACT pnpm version pinned in pm/lock.json
-# (e.g. 12.15.0) — a bare `pnpm@12` resolves newer (12.18.x) and fails the gate.
-# --allow-scripts: npm otherwise skips pnpm's own install scripts (broken binary).
-# The installer already builds TUI + web UI; re-run the web build for a CI-deterministic artifact.
-RUN cd /usr/local/lib/hermes-agent && \
-    (command -v pnpm >/dev/null 2>&1 || npm install -g --allow-scripts \
-        "pnpm@$(node -p "require('./pm/lock.json').packages.pnpm.version")") && \
-    CI=1 pnpm install --frozen-lockfile --filter web... && \
-    CI=1 pnpm --filter web run build
+# NOTE: no manual web build. v0.23.x installer's stage_products already builds
+# the web UI (hermes_cli/web_dist) in the run above; hermes dashboard --skip-build
+# serves that pre-built dist. A separate npm/pnpm build re-triggers the repo's
+# preinstall gate (requires exact pinned pnpm, refuses npm) and is redundant.
 
 # Install 9Router and start automatically in the background
 # Remove this later ---
