@@ -55,25 +55,28 @@ cd "${HOME}" || cd /
 mkdir -p "${HERMES_HOME}/logs"
 
 # ---------------------------------------------------------------------------
-# 3. Fresh-install detection + config seeding.
+# 3. Config seeding (gated on an owned sentinel marker, NOT on logs/ being empty).
 #
-# set_if_missing is a trap, not a fix: `hermes config get <key>` always
-# succeeds and returns the *effective* value, i.e. whatever is in config.yaml
-# OR the vendor built-in default. On a fresh volume config.yaml *is* the stock
-# auto-generated template (hermes generates it from its own defaults), so every
-# key "already exists" and nothing would ever be written. So gate on a real
-# fresh-install signal instead: hermes has never booted here (empty logs dir)
-# => the config is still the unmodified stock template => safe to apply our
-# full block unconditionally. Returning users keep their customizations.
+# The old empty-logs/ gate is broken on v0.23.x and must not come back:
+#   1. The v0.23.1 installer runs with HERMES_HOME=/config/.hermes at BUILD
+#      time and writes into logs/ — content gets baked into the image layer,
+#      so the dir is non-empty on EVERY fresh volume.
+#   2. s6 init is parallel: start-codeserver.sh runs hermes plugin/mnemon
+#      setup against the same HERMES_HOME and dirties it the same second.
+# Either way the gate reported "returning install" on a FRESH volume and
+# skipped the entire config block — config.yaml stayed stock (model=
+# anthropic/claude-opus-4.6, provider=auto, no providers.*/auxiliary.vision).
+# Proven by run 43261010629 boot-logs (docker-compose.log line 122).
+#
+# A marker file written by us only after a successful apply is the single
+# source of truth: absent => apply block (fresh volume, first boot after an
+# image update, or a previously broken boot — all safe: the sets are
+# idempotent); present => preserve user customizations.
 # ---------------------------------------------------------------------------
-FRESH_LOGS_DIR="${HERMES_HOME}/logs"
-FRESH_INSTALL=false
-if [ -d "${FRESH_LOGS_DIR}" ] && [ -z "$(ls -A "${FRESH_LOGS_DIR}" 2>/dev/null)" ]; then
-  FRESH_INSTALL="true"
-fi
+CONFIG_MARKER="${HERMES_HOME}/.webtop-config-applied"
 
-if [ "${FRESH_INSTALL}" = "true" ]; then
-  echo "[start-hermes] fresh install detected (empty ${FRESH_LOGS_DIR}); applying full default config..."
+if [ ! -f "${CONFIG_MARKER}" ]; then
+  echo "[start-hermes] no config marker at ${CONFIG_MARKER}; applying full default config..."
   apply_config() {
     hermes config set "$1" "$2" || echo "[start-hermes] WARNING: failed to set $1=$2"
   }
@@ -109,8 +112,15 @@ if [ "${FRESH_INSTALL}" = "true" ]; then
   apply_config "agent.max_turns" "120"
   apply_config "kanban.failure_limit" "3"
   echo "[start-hermes] config defaults applied."
+  # Marker proves WE applied this block on this volume. Written unconditionally
+  # (the sets above are idempotent); failing to write it is a hard error since
+  # every subsequent boot would silently re-apply and mask nothing.
+  if ! echo "applied by start-hermes.sh at $(date -u +'%Y-%m-%dT%H:%M:%SZ')" > "${CONFIG_MARKER}"; then
+    echo "[start-hermes] ERROR: failed to write config marker ${CONFIG_MARKER}" >&2
+    exit 1
+  fi
 else
-  echo "[start-hermes] returning install detected (${FRESH_LOGS_DIR} non-empty); preserving existing config."
+  echo "[start-hermes] config marker present; preserving existing config."
 fi
 
 # First-run seeding of skill + .hermes.md (only if missing)

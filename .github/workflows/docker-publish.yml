@@ -91,6 +91,14 @@ jobs:
           # echo "model.default=$(docker exec -u abc "$CONTAINER_NAME" hermes config get model.default)"
           # echo "model.provider=$(docker exec -u abc "$CONTAINER_NAME" hermes config get model.provider)"
 
+          # Verify boot actually applied our config (regression class of run 43261010629:
+          # the fresh-install gate misfired, skipped the block, and CI still passed).
+          echo "=== Verifying applied config (marker + providers + auxiliary vision) ==="
+          docker exec -u abc "$CONTAINER_NAME" test -f /config/.hermes/.webtop-config-applied
+          docker exec -u abc "$CONTAINER_NAME" hermes config get model.provider | grep -q omniroute
+          docker exec -u abc "$CONTAINER_NAME" hermes config get auxiliary.vision.provider | grep -q omniroute
+          docker exec -u abc "$CONTAINER_NAME" hermes config get auxiliary.vision.fallback_chain | grep -q 9router
+
           # Run self-check (it has its own 120s polling loop for all ports)
           echo "=== Running boot-time self-check validation ==="
           # Execute the self-check script inside the container.
@@ -303,6 +311,14 @@ jobs:
           # docker exec -u abc "$CONTAINER_NAME" hermes config set model.provider 9router
           # echo "model.default=$(docker exec -u abc "$CONTAINER_NAME" hermes config get model.default)"
           # echo "model.provider=$(docker exec -u abc "$CONTAINER_NAME" hermes config get model.provider)"
+
+          # Verify boot actually applied our config (regression class of run 43261010629:
+          # the fresh-install gate misfired, skipped the block, and CI still passed).
+          echo "=== Verifying applied config (marker + providers + auxiliary vision) ==="
+          docker exec -u abc "$CONTAINER_NAME" test -f /config/.hermes/.webtop-config-applied
+          docker exec -u abc "$CONTAINER_NAME" hermes config get model.provider | grep -q omniroute
+          docker exec -u abc "$CONTAINER_NAME" hermes config get auxiliary.vision.provider | grep -q omniroute
+          docker exec -u abc "$CONTAINER_NAME" hermes config get auxiliary.vision.fallback_chain | grep -q 9router
 
           # Run self-check (it has its own 120s polling loop for all ports)
           echo "=== Running boot-time self-check validation ==="
