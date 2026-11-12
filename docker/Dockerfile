@@ -67,6 +67,17 @@ RUN test -x /usr/local/lib/hermes-agent/.hermes/bin/hermes || \
     { echo "FATAL: hermes launcher missing at /usr/local/lib/hermes-agent/.hermes/bin/hermes" >&2; exit 1; }; \
     ln -sf /usr/local/lib/hermes-agent/.hermes/bin/hermes /usr/local/bin/hermes
 
+# Baseline hash of the PRISTINE stock config for THIS image's Hermes version.
+# v0.23.1 seeds a fresh config.yaml by copying cli-config.yaml.example verbatim
+# (hermes_cli/config.py seed_config_file -> shutil.copy2), so this file is the
+# single "untouched template" reference for whichever Hermes version is baked in
+# beside it. Baked into the same image layer as the install => always matches the
+# installed version; an upgrade image carries its own baseline. Used at runtime
+# to classify config.yaml as stock vs user-customized.
+RUN mkdir -p /usr/local/share/hermes-webtop && \
+    sha256sum /usr/local/lib/hermes-agent/cli-config.yaml.example \
+    | cut -d' ' -f1 > /usr/local/share/hermes-webtop/stock-config.sha256
+
 # NOTE: no manual web build. v0.23.x installer's stage_products already builds
 # the web UI (hermes_cli/web_dist) in the run above; hermes dashboard --skip-build
 # serves that pre-built dist. A separate npm/pnpm build re-triggers the repo's

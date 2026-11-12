@@ -55,28 +55,78 @@ cd "${HOME}" || cd /
 mkdir -p "${HERMES_HOME}/logs"
 
 # ---------------------------------------------------------------------------
-# 3. Config seeding (gated on an owned sentinel marker, NOT on logs/ being empty).
+# 3. Config seeding — classified by content, NOT by a side-channel marker.
 #
-# The old empty-logs/ gate is broken on v0.23.x and must not come back:
-#   1. The v0.23.1 installer runs with HERMES_HOME=/config/.hermes at BUILD
-#      time and writes into logs/ — content gets baked into the image layer,
-#      so the dir is non-empty on EVERY fresh volume.
-#   2. s6 init is parallel: start-codeserver.sh runs hermes plugin/mnemon
-#      setup against the same HERMES_HOME and dirties it the same second.
-# Either way the gate reported "returning install" on a FRESH volume and
-# skipped the entire config block — config.yaml stayed stock (model=
-# anthropic/claude-opus-4.6, provider=auto, no providers.*/auxiliary.vision).
-# Proven by run 43261010629 boot-logs (docker-compose.log line 122).
+# History: the original "fresh install?" gate checked that $HERMES_HOME/logs
+# was empty and silently skipped the whole block on fresh v0.23.x images
+# (installer dirties logs/ at BUILD time; parallel start-codeserver races it)
+# — proven by run 43261010629. The follow-up sentinel-marker fix worked but
+# left the gate dependent on a bookkeeping file.
 #
-# A marker file written by us only after a successful apply is the single
-# source of truth: absent => apply block (fresh volume, first boot after an
-# image update, or a previously broken boot — all safe: the sets are
-# idempotent); present => preserve user customizations.
+# The honest signal is the config itself. Two independent facts (verified in
+# v0.23.1 source, hermes_cli/config.py:seed_config_file -> shutil.copy2):
+#   * a pristine config.yaml is BYTE-IDENTICAL to cli-config.yaml.example
+#     (md5 aef2d235… in both the run-7 artifact and the v0.23.1 tree), and
+#   * stock contains NONE of our webtop keys (omniroute/9router/auxiliary
+#     greps over the 131 KB template all return 0), while our block writes
+#     providers.omniroute, providers.9router, auxiliary.*.
+# So classification needs no state file at all:
+#
+#   SEED      config.yaml missing            (brand-new home)
+#   SEED      no webtop keys present         (stock template, untouched OR
+#                                       hermes-migrated — neither carries user intent)
+#   PRESERVE  webtop keys present            (we applied, or user customized)
+#
+# Fallback direction (conservative for the USER, loud for us):
+#   * missing webtop keys + no baseline/hash -> still SEED (markers absent =
+#     unconfigured by us; seed is idempotent) — never PRESERVE an unconfigured file.
+#   * webtop keys present + hash unexpectedly matches stock -> PRESERVE + WARN.
+#
+# The three webtop markers below are guaranteed absent from stock (see above)
+# and are written by the apply block, so they are perfect discriminators.
 # ---------------------------------------------------------------------------
-CONFIG_MARKER="${HERMES_HOME}/.webtop-config-applied"
+CONFIG_FILE="${HERMES_HOME}/config.yaml"
+STOCK_HASH_FILE="/usr/local/share/hermes-webtop/stock-config.sha256"
+WEBTOP_MARKERS="localhost:20128/v1 localhost:7352/v1 auxiliary.vision"
 
-if [ ! -f "${CONFIG_MARKER}" ]; then
-  echo "[start-hermes] no config marker at ${CONFIG_MARKER}; applying full default config..."
+should_seed=""
+may_warn=""
+if [ ! -f "${CONFIG_FILE}" ]; then
+  should_seed="config.yaml missing (fresh home)"
+else
+  # Corroborating hash check (non-fatal): proves the file is the untouched stock
+  # template when it matches the image-baked baseline. Only used to enrich the
+  # seed reason; it must NEVER flip an otherwise-correct decision.
+  STOCK_SHA="$(cat "${STOCK_HASH_FILE}" 2>/dev/null | tr -d '[:space:]')"
+  CUR_SHA="$(command -v sha256sum >/dev/null 2>&1 && sha256sum "${CONFIG_FILE}" 2>/dev/null | cut -d' ' -f1 | tr -d '[:space:]')"
+
+  # Primary discriminator: are any of OUR webtop keys present?
+  HAS_MARKERS=1
+  for m in ${WEBTOP_MARKERS}; do
+    grep -qF -- "${m}" "${CONFIG_FILE}" || { HAS_MARKERS=0; break; }
+  done
+
+  if [ "${HAS_MARKERS}" -eq 0 ]; then
+    # No webtop keys = unconfigured by us. Seed (idempotent). Enrich with hash
+    # if available: match = pristine template, mismatch = hermes normalized it
+    # first (the known run-7 race). Either way the file carries no user intent.
+    if [ -n "${CUR_SHA}" ] && [ "${CUR_SHA}" = "${STOCK_SHA}" ]; then
+      should_seed="config.yaml is the unmodified stock template (hash match)"
+    else
+      should_seed="config.yaml has no webtop keys (unconfigured)"
+    fi
+  else
+    # Webtop keys present = we (or the user on top of us) configured this file.
+    # Preserve unconditionally — never re-apply over real user state.
+    if [ -n "${CUR_SHA}" ] && [ "${CUR_SHA}" = "${STOCK_SHA}" ]; then
+      may_warn="webtop keys present yet hash matches stock baseline (unexpected)"
+    fi
+    echo "[start-hermes] config already carries webtop markers; preserving existing config."
+  fi
+fi
+
+if [ -n "${should_seed}" ]; then
+  echo "[start-hermes] seeding config: ${should_seed}"
   apply_config() {
     hermes config set "$1" "$2" || echo "[start-hermes] WARNING: failed to set $1=$2"
   }
@@ -112,15 +162,10 @@ if [ ! -f "${CONFIG_MARKER}" ]; then
   apply_config "agent.max_turns" "120"
   apply_config "kanban.failure_limit" "3"
   echo "[start-hermes] config defaults applied."
-  # Marker proves WE applied this block on this volume. Written unconditionally
-  # (the sets above are idempotent); failing to write it is a hard error since
-  # every subsequent boot would silently re-apply and mask nothing.
-  if ! echo "applied by start-hermes.sh at $(date -u +'%Y-%m-%dT%H:%M:%SZ')" > "${CONFIG_MARKER}"; then
-    echo "[start-hermes] ERROR: failed to write config marker ${CONFIG_MARKER}" >&2
-    exit 1
-  fi
-else
-  echo "[start-hermes] config marker present; preserving existing config."
+fi
+
+if [ -n "${may_warn}" ]; then
+  echo "[start-hermes] WARNING: ${may_warn}" >&2
 fi
 
 # First-run seeding of skill + .hermes.md (only if missing)
