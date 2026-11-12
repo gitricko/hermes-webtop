@@ -12,7 +12,7 @@
           "provider": "omniroute",
           "baseUrl": "http://localhost:20128/v1",
           "reasoning": true,
-          "input": ["text"],
+          "input": ["text", "image"],
           "cost": {
             "input": 0,
             "output": 0,
@@ -42,7 +42,7 @@
           "provider": "9router",
           "baseUrl": "http://localhost:7352/v1",
           "reasoning": true,
-          "input": ["text"],
+          "input": ["text", "image"],
           "cost": {
             "input": 0,
             "output": 0,

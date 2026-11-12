@@ -15,7 +15,7 @@ _Run Hermes-Agent inside a browser-based VSCode + Linux desktop with free LLM su
 <p align="center">
 <!-- versions-begin: managed by scripts/sync-badges.sh — do not edit between markers -->
   <a href="https://github.com/NousResearch/hermes-agent">
-    <img src="https://img.shields.io/badge/Hermes%20Agent-2026.9.24-purple?logo=github" alt="Hermes Agent version">
+    <img src="https://img.shields.io/badge/Hermes%20Agent-0.23.1-purple?logo=github" alt="Hermes Agent version">
   </a>
   <a href="https://pi.dev">
     <img src="https://img.shields.io/badge/PI%20Agent-1.5.2-brown?logo=github" alt="PI Agent version">

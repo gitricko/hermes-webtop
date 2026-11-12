@@ -46,16 +46,33 @@ npm_latest() {  # $1 = npm package name
         || echo "?"
 }
 
-gh_latest() {  # $1 = owner/repo -> newest stable tag (rc/beta/alpha/dev excluded, leading v stripped)
-    curl -sL "https://api.github.com/repos/$1/tags" \
+gh_latest() {  # $1 = owner/repo, $2 = optional tag glob (e.g. 'v0*')
+              # -> newest stable tag by semver (rc/beta/alpha/dev/canary excluded, leading v stripped)
+              # git ls-remote, not the API: no rate limit, no pagination (API caps at 30/100
+              # tags per page and 403s at 60 req/hr per IP, which made every row UNAVAILABLE)
+    git ls-remote --tags "https://github.com/$1.git" 2>/dev/null \
         | python3 -c "
-import json,sys,re
-d = json.load(sys.stdin)
-if not isinstance(d, list) or not d:
-    print('?'); sys.exit()
+import sys,re,fnmatch
+names = set()
+for line in sys.stdin:
+    parts = line.split()
+    if len(parts) != 2 or not parts[1].startswith('refs/tags/'):
+        continue
+    name = parts[1][len('refs/tags/'):]
+    if name.endswith('^{}'):
+        continue
+    names.add(name)
+names = sorted(names)
 pre = re.compile(r'(?i)(rc|beta|alpha|preview|pre[-.]|dev|nightly|canary|next)')
-stable = [t['name'] for t in d if not pre.search(t['name'])]
-print(stable[0].lstrip('v') if stable else '?')" 2>/dev/null \
+names = [n for n in names if not pre.search(n)]
+names = [n for n in names if re.fullmatch(r'v?\d+(\.\d+)*', n)]  # drop non-semver tags (backup/*, etc.)
+glob = sys.argv[1] if len(sys.argv) > 1 else ''
+if glob:
+    names = [n for n in names if fnmatch.fnmatch(n, glob)]
+if not names:
+    print('?'); sys.exit()
+key = lambda v: [int(p) for p in re.findall(r'\d+', v)]
+print(max(names, key=key).lstrip('v'))" "${2:-}" 2>/dev/null \
         || echo "?"
 }
 
@@ -91,7 +108,9 @@ check "omniroute"       "OMNIROUTE_VERSION"    "${OMNIROUTE_VERSION}"    "$(npm_
 check "pi-coding-agent" "PI_VERSION"           "${PI_VERSION}"           "$(npm_latest @earendil-works/pi-coding-agent)"
 echo ""
 echo "GitHub-release binaries:"
-check "hermes-agent"    "HERMES_VERSION"       "${HERMES_VERSION}"       "$(gh_latest NousResearch/hermes-agent)"
+# hermes-agent switched from date tags (v20*) to semver tags (v0*); pin the
+# selector to the current scheme so a date tag never compares as "newer"
+check "hermes-agent"    "HERMES_VERSION"       "${HERMES_VERSION}"       "$(gh_latest NousResearch/hermes-agent v0*)"
 check "node"            "NODE_VERSION"         "${NODE_VERSION}"         "$(node_latest "${NODE_VERSION}")"
 check "ollama"          "OLLAMA_VERSION"       "${OLLAMA_VERSION}"       "$(gh_latest ollama/ollama)"
 check "code-server"     "CODE_SERVER_VERSION"  "${CODE_SERVER_VERSION}"  "$(gh_latest coder/code-server)"

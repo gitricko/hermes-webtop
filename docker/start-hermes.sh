@@ -68,6 +68,12 @@ if [ "${FRESH_INSTALL}" = "true" ]; then
   apply_config() {
     hermes config set "$1" "$2" || echo "[start-hermes] WARNING: failed to set $1=$2"
   }
+  # Same as apply_config but passes --force: needed for keys read by hermes
+  # (e.g. auxiliary.*.fallback_chain) that are not declared in DEFAULT_CONFIG,
+  # where `config set` prints an unknown-key notice (still writes).
+  apply_config_force() {
+    hermes config set --force "$1" "$2" || echo "[start-hermes] WARNING: failed to set $1=$2 (forced)"
+  }
   apply_config "terminal.cwd" "${PWD}"
   apply_config "display.busy_input_mode" "steer"
   apply_config "model.default" "auto-fastest"
@@ -80,8 +86,11 @@ if [ "${FRESH_INSTALL}" = "true" ]; then
   apply_config "fallback_providers.model" "auto-fastest"
   apply_config "auxiliary.title_generation.model" "auto-fastest"
   apply_config "auxiliary.title_generation.provider" "9router"
+  # Auxiliary vision route: image analysis goes to OmniRoute, falls back to 9Router.
+  # fallback_chain key is not in DEFAULT_CONFIG, so it requires config set --force.
   apply_config "auxiliary.vision.model" "auto-fastest"
-  apply_config "auxiliary.vision.provider" "9router"
+  apply_config "auxiliary.vision.provider" "omniroute"
+  apply_config_force "auxiliary.vision.fallback_chain" '[{provider: 9router, model: auto-fastest}]'
   apply_config "auxiliary.compression.model" "auto-fastest"
   apply_config "auxiliary.compression.provider" "9router"
   apply_config "approvals.mode" "off"
