@@ -55,7 +55,7 @@ ARG HERMES_VERSION
 ENV HERMES_HOME=/config/.hermes
 RUN curl --retry 5 --retry-delay 10 --retry-connrefused --retry-all-errors -fsSL \
     "https://raw.githubusercontent.com/NousResearch/hermes-agent/v${HERMES_VERSION}/scripts/install.sh" \
-    | bash -s -- --skip-setup || exit 1; \
+    | bash -s -- --skip-setup --dir /usr/local/lib/hermes-agent || exit 1; \
     rm -rf /var/lib/apt/lists/* && \
     cd /usr/local/lib/hermes-agent && \
     CI=1 npm ci --include=dev --workspace web --silent 2>&1 && \
