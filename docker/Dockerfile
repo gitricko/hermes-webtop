@@ -58,6 +58,15 @@ RUN curl --retry 5 --retry-delay 10 --retry-connrefused --retry-all-errors -fsSL
     | bash -s -- --skip-setup --dir /usr/local/lib/hermes-agent || exit 1; \
     rm -rf /var/lib/apt/lists/*
 
+# v0.23.x publishes the hermes launcher to $INSTALL_DIR/.hermes/bin only
+# (root's ~/.local/bin shell-rc wiring never reaches s6 / runuser contexts).
+# Bare `hermes` calls (start-hermes, self-check, docker exec) all need it on
+# PATH — without this symlink they die with "No such file or directory" and
+# CI hangs 600s in the health loop. Fail the build if the launcher is missing.
+RUN test -x /usr/local/lib/hermes-agent/.hermes/bin/hermes || \
+    { echo "FATAL: hermes launcher missing at /usr/local/lib/hermes-agent/.hermes/bin/hermes" >&2; exit 1; }; \
+    ln -sf /usr/local/lib/hermes-agent/.hermes/bin/hermes /usr/local/bin/hermes
+
 # NOTE: no manual web build. v0.23.x installer's stage_products already builds
 # the web UI (hermes_cli/web_dist) in the run above; hermes dashboard --skip-build
 # serves that pre-built dist. A separate npm/pnpm build re-triggers the repo's

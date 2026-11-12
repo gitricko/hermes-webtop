@@ -36,7 +36,16 @@ fix_ownership_if_needed "${HERMES_HOME}"
 runuser -l abc <<'EOF'
 source /custom-cont-init.d/common.sh || exit 1
 
+# v0.23.x launcher lives at $INSTALL_DIR/.hermes/bin, exposed image-wide by
+# the /usr/local/bin/hermes symlink from the Dockerfile (root's ~/.local/bin
+# wiring never reaches this runuser -l abc / s6 context). Bare `hermes` calls
+# below (config set, gateway, dashboard) die with "No such file or directory"
+# without it — CI hang: port 9009 never listens, health loop spins 600s.
 export PATH="/usr/local/bin:/usr/bin:/bin"
+if ! command -v hermes >/dev/null 2>&1; then
+  echo "[start-hermes] FATAL: hermes launcher not found in PATH (${PATH})" >&2
+  exit 1
+fi
 export HOME="${HOME}"
 export HERMES_HOME="${HERMES_HOME:-${HOME}/.hermes}"
 unset LD_LIBRARY_PATH LD_PRELOAD HTTP_PROXY HTTPS_PROXY http_proxy https_proxy 2>/dev/null || true
