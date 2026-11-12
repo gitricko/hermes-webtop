@@ -50,7 +50,16 @@ gh_latest() {  # $1 = owner/repo, $2 = optional tag glob (e.g. 'v0*')
               # -> newest stable tag by semver (rc/beta/alpha/dev/canary excluded, leading v stripped)
               # git ls-remote, not the API: no rate limit, no pagination (API caps at 30/100
               # tags per page and 403s at 60 req/hr per IP, which made every row UNAVAILABLE)
-    git ls-remote --tags "https://github.com/$1.git" 2>/dev/null \
+    local tags
+    # pipefail: git failure makes the pipeline fail even though python exits 0,
+    # so the old `| python ... || echo "?"` fired a SECOND `?` (two-line value
+    # broke check()'s UNAVAILABLE test and made --fix write `ARG X=?`).
+    tags="$(git ls-remote --tags "https://github.com/$1.git" 2>/dev/null)" || tags=""
+    if [ -z "$tags" ]; then
+        echo "?"
+        return 0
+    fi
+    printf '%s\n' "$tags" \
         | python3 -c "
 import sys,re,fnmatch
 names = set()
@@ -74,6 +83,11 @@ if not names:
 key = lambda v: [int(p) for p in re.findall(r'\d+', v)]
 print(max(names, key=key).lstrip('v'))" "${2:-}" 2>/dev/null \
         || echo "?"
+}
+
+# reject anything that is not a plain dotted version before --fix writes it
+safe_version() {  # $1 = candidate
+    [[ "$1" =~ ^[0-9]+(\.[0-9]+)*$ ]]
 }
 
 node_latest() {  # $1 = current version -> newest in the same major line
@@ -132,6 +146,10 @@ if [ -s "$UPDATES_FILE" ]; then
     echo ""
     echo "=== Applying updates to docker/Dockerfile ==="
     while IFS=$'\t' read -r name current latest; do
+        if ! safe_version "$latest"; then
+            echo "  SKIP ${name}: unsafe latest value '${latest}' (lookup failed?)"
+            continue
+        fi
         # Replace only the first (defining, versioned) occurrence of this ARG.
         python3 - "$DOCKERFILE" "$name" "$latest" <<'PY'
 import re, sys
