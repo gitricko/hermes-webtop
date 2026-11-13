@@ -1,10 +1,10 @@
-ARG HERMES_VERSION=2026.9.24
-ARG OMNIROUTE_VERSION=3.8.52
-ARG NINEROUTER_VERSION=0.5.112
-ARG OLLAMA_VERSION=0.40.13
-ARG NODE_VERSION=26.13.0
-ARG CODE_SERVER_VERSION=4.144.0
-ARG PI_VERSION=1.5.0
+ARG HERMES_VERSION=0.23.1
+ARG OMNIROUTE_VERSION=3.8.53
+ARG NINEROUTER_VERSION=0.5.119
+ARG OLLAMA_VERSION=0.40.16
+ARG NODE_VERSION=26.13.1
+ARG CODE_SERVER_VERSION=4.145.2
+ARG PI_VERSION=1.5.2
 ARG MNEMON_VERSION=0.2.13
 ARG HERDR_VERSION=0.9.5
 ARG TARGETARCH
@@ -55,12 +55,40 @@ ARG HERMES_VERSION
 ENV HERMES_HOME=/config/.hermes
 RUN curl --retry 5 --retry-delay 10 --retry-connrefused --retry-all-errors -fsSL \
     "https://raw.githubusercontent.com/NousResearch/hermes-agent/v${HERMES_VERSION}/scripts/install.sh" \
-    | bash -s -- --skip-setup || exit 1; \
-    rm -rf /var/lib/apt/lists/* && \
-    cd /usr/local/lib/hermes-agent && \
-    CI=1 npm ci --include=dev --workspace web --silent 2>&1 && \
-    CI=1 npm run build -w web --silent 2>&1 && \
-    npm cache clean --force
+    | bash -s -- --skip-setup --dir /usr/local/lib/hermes-agent || exit 1; \
+    rm -rf /var/lib/apt/lists/*
+
+# v0.23.x publishes the hermes launcher to $INSTALL_DIR/.hermes/bin only
+# (root's ~/.local/bin shell-rc wiring never reaches s6 / runuser contexts).
+# Bare `hermes` calls (start-hermes, self-check, docker exec) all need it on
+# PATH — without this symlink they die with "No such file or directory" and
+# CI hangs 600s in the health loop. Fail the build if the launcher is missing.
+RUN test -x /usr/local/lib/hermes-agent/.hermes/bin/hermes || \
+    { echo "FATAL: hermes launcher missing at /usr/local/lib/hermes-agent/.hermes/bin/hermes" >&2; exit 1; }; \
+    ln -sf /usr/local/lib/hermes-agent/.hermes/bin/hermes /usr/local/bin/hermes
+
+# The installer's stage_products must have built the dashboard web UI — this
+# image ships no separate npm/pnpm web build (see NOTE below), so nothing else
+# proves web_dist exists. Fail the build instead of shipping a 404 dashboard.
+RUN test -f /usr/local/lib/hermes-agent/hermes_cli/web_dist/index.html || \
+    { echo "FATAL: hermes web UI missing (hermes_cli/web_dist/index.html) — installer stage_products did not build it" >&2; exit 1; }
+
+# Baseline hash of the PRISTINE stock config for THIS image's Hermes version.
+# v0.23.1 seeds a fresh config.yaml by copying cli-config.yaml.example verbatim
+# (hermes_cli/config.py seed_config_file -> shutil.copy2), so this file is the
+# single "untouched template" reference for whichever Hermes version is baked in
+# beside it. Baked into the same image layer as the install => always matches the
+# installed version; an upgrade image carries its own baseline. Used at runtime
+# to corroborate "config.yaml is the untouched template" (primary decision is
+# the webtop markers — see docker/start-hermes.sh).
+RUN mkdir -p /usr/local/share/hermes-webtop && \
+    sha256sum /usr/local/lib/hermes-agent/cli-config.yaml.example \
+    | cut -d' ' -f1 > /usr/local/share/hermes-webtop/stock-config.sha256
+
+# NOTE: no manual web build. v0.23.x installer's stage_products already builds
+# the web UI (hermes_cli/web_dist) in the run above; hermes dashboard --skip-build
+# serves that pre-built dist. A separate npm/pnpm build re-triggers the repo's
+# preinstall gate (requires exact pinned pnpm, refuses npm) and is redundant.
 
 # Install 9Router and start automatically in the background
 # Remove this later ---

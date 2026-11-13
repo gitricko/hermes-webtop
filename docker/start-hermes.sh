@@ -36,7 +36,16 @@ fix_ownership_if_needed "${HERMES_HOME}"
 runuser -l abc <<'EOF'
 source /custom-cont-init.d/common.sh || exit 1
 
+# v0.23.x launcher lives at $INSTALL_DIR/.hermes/bin, exposed image-wide by
+# the /usr/local/bin/hermes symlink from the Dockerfile (root's ~/.local/bin
+# wiring never reaches this runuser -l abc / s6 context). Bare `hermes` calls
+# below (config set, gateway, dashboard) die with "No such file or directory"
+# without it — CI hang: port 9009 never listens, health loop spins 600s.
 export PATH="/usr/local/bin:/usr/bin:/bin"
+if ! command -v hermes >/dev/null 2>&1; then
+  echo "[start-hermes] FATAL: hermes launcher not found in PATH (${PATH})" >&2
+  exit 1
+fi
 export HOME="${HOME}"
 export HERMES_HOME="${HERMES_HOME:-${HOME}/.hermes}"
 unset LD_LIBRARY_PATH LD_PRELOAD HTTP_PROXY HTTPS_PROXY http_proxy https_proxy 2>/dev/null || true
@@ -46,27 +55,89 @@ cd "${HOME}" || cd /
 mkdir -p "${HERMES_HOME}/logs"
 
 # ---------------------------------------------------------------------------
-# 3. Fresh-install detection + config seeding.
+# 3. Config seeding — classified by content, NOT by a side-channel marker.
 #
-# set_if_missing is a trap, not a fix: `hermes config get <key>` always
-# succeeds and returns the *effective* value, i.e. whatever is in config.yaml
-# OR the vendor built-in default. On a fresh volume config.yaml *is* the stock
-# auto-generated template (hermes generates it from its own defaults), so every
-# key "already exists" and nothing would ever be written. So gate on a real
-# fresh-install signal instead: hermes has never booted here (empty logs dir)
-# => the config is still the unmodified stock template => safe to apply our
-# full block unconditionally. Returning users keep their customizations.
+# History: the original "fresh install?" gate checked that $HERMES_HOME/logs
+# was empty and silently skipped the whole block on fresh v0.23.x images
+# (installer dirties logs/ at BUILD time; parallel start-codeserver races it)
+# — proven by run 43261010629. The follow-up sentinel-marker fix worked but
+# left the gate dependent on a bookkeeping file.
+#
+# The honest signal is the config itself. Two independent facts (verified in
+# v0.23.1 source, hermes_cli/config.py:seed_config_file -> shutil.copy2):
+#   * a pristine config.yaml is BYTE-IDENTICAL to cli-config.yaml.example
+#     (md5 aef2d235… in both the run-7 artifact and the v0.23.1 tree), and
+#   * stock contains NONE of our webtop keys (omniroute/9router/auxiliary
+#     greps over the 131 KB template all return 0), while our block writes
+#     providers.omniroute, providers.9router, auxiliary.*.
+# So classification needs no state file at all:
+#
+#   SEED      config.yaml missing            (brand-new home)
+#   SEED      no webtop keys present         (stock template, untouched OR
+#                                       hermes-migrated — neither carries user intent)
+#   PRESERVE  webtop keys present            (we applied, or user customized)
+#
+# Fallback direction (conservative for the USER, loud for us):
+#   * missing webtop keys + no baseline/hash -> still SEED (markers absent =
+#     unconfigured by us; seed is idempotent) — never PRESERVE an unconfigured file.
+#   * webtop keys present + hash unexpectedly matches stock -> PRESERVE + WARN.
+#
+# The two webtop markers below are guaranteed absent from stock (see above)
+# and are written by the apply block as single-line literals, so they are
+# perfect discriminators. (Do NOT use dotted-path literals like
+# auxiliary.vision: Hermes stores auxiliary as nested YAML — a dotted string
+# never appears in config.yaml, so such a marker would never match.)
 # ---------------------------------------------------------------------------
-FRESH_LOGS_DIR="${HERMES_HOME}/logs"
-FRESH_INSTALL=false
-if [ -d "${FRESH_LOGS_DIR}" ] && [ -z "$(ls -A "${FRESH_LOGS_DIR}" 2>/dev/null)" ]; then
-  FRESH_INSTALL="true"
+CONFIG_FILE="${HERMES_HOME}/config.yaml"
+STOCK_HASH_FILE="/usr/local/share/hermes-webtop/stock-config.sha256"
+WEBTOP_MARKERS="localhost:20128/v1 localhost:7352/v1"
+
+should_seed=""
+may_warn=""
+if [ ! -f "${CONFIG_FILE}" ]; then
+  should_seed="config.yaml missing (fresh home)"
+else
+  # Corroborating hash check (non-fatal): proves the file is the untouched stock
+  # template when it matches the image-baked baseline. Only used to enrich the
+  # seed reason; it must NEVER flip an otherwise-correct decision.
+  STOCK_SHA="$(cat "${STOCK_HASH_FILE}" 2>/dev/null | tr -d '[:space:]')"
+  CUR_SHA="$(command -v sha256sum >/dev/null 2>&1 && sha256sum "${CONFIG_FILE}" 2>/dev/null | cut -d' ' -f1 | tr -d '[:space:]')"
+
+  # Primary discriminator: are any of OUR webtop keys present?
+  HAS_MARKERS=1
+  for m in ${WEBTOP_MARKERS}; do
+    grep -qF -- "${m}" "${CONFIG_FILE}" || { HAS_MARKERS=0; break; }
+  done
+
+  if [ "${HAS_MARKERS}" -eq 0 ]; then
+    # No webtop keys = unconfigured by us. Seed (idempotent). Enrich with hash
+    # if available: match = pristine template, mismatch = hermes normalized it
+    # first (the known run-7 race). Either way the file carries no user intent.
+    if [ -n "${CUR_SHA}" ] && [ "${CUR_SHA}" = "${STOCK_SHA}" ]; then
+      should_seed="config.yaml is the unmodified stock template (hash match)"
+    else
+      should_seed="config.yaml has no webtop keys (unconfigured)"
+    fi
+  else
+    # Webtop keys present = we (or the user on top of us) configured this file.
+    # Preserve unconditionally — never re-apply over real user state.
+    if [ -n "${CUR_SHA}" ] && [ "${CUR_SHA}" = "${STOCK_SHA}" ]; then
+      may_warn="webtop keys present yet hash matches stock baseline (unexpected)"
+    fi
+    echo "[start-hermes] config already carries webtop markers; preserving existing config."
+  fi
 fi
 
-if [ "${FRESH_INSTALL}" = "true" ]; then
-  echo "[start-hermes] fresh install detected (empty ${FRESH_LOGS_DIR}); applying full default config..."
+if [ -n "${should_seed}" ]; then
+  echo "[start-hermes] seeding config: ${should_seed}"
   apply_config() {
     hermes config set "$1" "$2" || echo "[start-hermes] WARNING: failed to set $1=$2"
+  }
+  # Same as apply_config but passes --force: needed for keys read by hermes
+  # (e.g. auxiliary.*.fallback_chain) that are not declared in DEFAULT_CONFIG,
+  # where `config set` prints an unknown-key notice (still writes).
+  apply_config_force() {
+    hermes config set --force "$1" "$2" || echo "[start-hermes] WARNING: failed to set $1=$2 (forced)"
   }
   apply_config "terminal.cwd" "${PWD}"
   apply_config "display.busy_input_mode" "steer"
@@ -80,8 +151,11 @@ if [ "${FRESH_INSTALL}" = "true" ]; then
   apply_config "fallback_providers.model" "auto-fastest"
   apply_config "auxiliary.title_generation.model" "auto-fastest"
   apply_config "auxiliary.title_generation.provider" "9router"
+  # Auxiliary vision route: image analysis goes to OmniRoute, falls back to 9Router.
+  # fallback_chain key is not in DEFAULT_CONFIG, so it requires config set --force.
   apply_config "auxiliary.vision.model" "auto-fastest"
-  apply_config "auxiliary.vision.provider" "9router"
+  apply_config "auxiliary.vision.provider" "omniroute"
+  apply_config_force "auxiliary.vision.fallback_chain" '[{provider: 9router, model: auto-fastest}]'
   apply_config "auxiliary.compression.model" "auto-fastest"
   apply_config "auxiliary.compression.provider" "9router"
   apply_config "approvals.mode" "off"
@@ -91,8 +165,10 @@ if [ "${FRESH_INSTALL}" = "true" ]; then
   apply_config "agent.max_turns" "120"
   apply_config "kanban.failure_limit" "3"
   echo "[start-hermes] config defaults applied."
-else
-  echo "[start-hermes] returning install detected (${FRESH_LOGS_DIR} non-empty); preserving existing config."
+fi
+
+if [ -n "${may_warn}" ]; then
+  echo "[start-hermes] WARNING: ${may_warn}" >&2
 fi
 
 # First-run seeding of skill + .hermes.md (only if missing)

@@ -76,10 +76,10 @@ else
   echo "[start-ninerouter] No existing auto-fastest combo found"
 fi
 
-# 4) create new auto-fastest combo with 7 free oc/ models (matches https://github.com/gitricko/.minions/blob/main/etc/9router-models.json)
-echo "[start-ninerouter] Creating new auto-fastest combo with 7 free oc/ models..."
+# 4) create new auto-fastest combo with free oc/ models (matches https://github.com/gitricko/.minions/blob/main/etc/9router-models.json)
+echo "[start-ninerouter] Creating new auto-fastest combo with free oc/ models..."
 
-MODELS='["oc/beam-free","oc/flint-40b-free","oc/mimo-v2.6-flash-free","oc/nemotron-3.5-super-vl-free","oc/nemotron-3.5-lightning-free","oc/deepseek-v4.1-flash-free","oc/glm-5.3-flash-free"]'
+MODELS='["oc/mimo-v2.6-flash-free","oc/deepseek-v4.1-flash-free","oc/glm-5.3-flash-free","oc/longcat-2.5-free","oc/iceman-free","oc/inkling-2-small-free","oc/beam-free","oc/flint-40b-free","oc/nemotron-3.5-super-vl-free","oc/nemotron-3.5-lightning-free"]'
 
 CREATE_RESPONSE=$(curl -s -X POST "$BASE_URL/api/combos" -H "Content-Type: application/json" "${AUTH_ARGS[@]}" -d "{\"name\":\"auto-fastest\",\"models\":$MODELS}")
 
