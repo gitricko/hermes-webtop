@@ -69,7 +69,10 @@ jobs:
           echo "=== Waiting for Hermes to become healthy ==="
           for i in $(seq 1 120); do
             CODE=$(docker exec "$CONTAINER_NAME" curl -s -o /dev/null -w "%{http_code}" --max-time 5 "http://localhost:9119" 2>/dev/null | tr -d '[:space:]')
-              if [ -n "$CODE" ] && [ "$CODE" != "000" ]; then
+              # Assert 200, not just != 000: a dashboard 404/500 must fail the
+              # health loop (the PR dropped the explicit web build; nothing else
+              # proves the installer actually built web_dist).
+              if [ "$CODE" = "200" ]; then
                 echo "Hermes responded HTTP $CODE after $((i * 10))s"
               break
             fi
@@ -297,7 +300,10 @@ jobs:
           echo "=== Waiting for Hermes to become healthy ==="
           for i in $(seq 1 120); do
             CODE=$(docker exec "$CONTAINER_NAME" curl -s -o /dev/null -w "%{http_code}" --max-time 5 "http://localhost:9119" 2>/dev/null | tr -d '[:space:]')
-              if [ -n "$CODE" ] && [ "$CODE" != "000" ]; then
+              # Assert 200, not just != 000: a dashboard 404/500 must fail the
+              # health loop (the PR dropped the explicit web build; nothing else
+              # proves the installer actually built web_dist).
+              if [ "$CODE" = "200" ]; then
                 echo "Hermes responded HTTP $CODE after $((i * 10))s"
               break
             fi

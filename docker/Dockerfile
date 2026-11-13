@@ -67,6 +67,12 @@ RUN test -x /usr/local/lib/hermes-agent/.hermes/bin/hermes || \
     { echo "FATAL: hermes launcher missing at /usr/local/lib/hermes-agent/.hermes/bin/hermes" >&2; exit 1; }; \
     ln -sf /usr/local/lib/hermes-agent/.hermes/bin/hermes /usr/local/bin/hermes
 
+# The installer's stage_products must have built the dashboard web UI — this
+# image ships no separate npm/pnpm web build (see NOTE below), so nothing else
+# proves web_dist exists. Fail the build instead of shipping a 404 dashboard.
+RUN test -f /usr/local/lib/hermes-agent/hermes_cli/web_dist/index.html || \
+    { echo "FATAL: hermes web UI missing (hermes_cli/web_dist/index.html) — installer stage_products did not build it" >&2; exit 1; }
+
 # Baseline hash of the PRISTINE stock config for THIS image's Hermes version.
 # v0.23.1 seeds a fresh config.yaml by copying cli-config.yaml.example verbatim
 # (hermes_cli/config.py seed_config_file -> shutil.copy2), so this file is the
